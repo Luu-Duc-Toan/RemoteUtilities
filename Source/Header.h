@@ -6,7 +6,6 @@
 #define WIN32_LEAN_AND_MEAN 
 #endif
 
-#include <iostream>
 #include <vector>
 #include <string>
 #include <cstdlib> 
@@ -18,13 +17,17 @@
 #include <stack>
 #include <sstream>
 #include <regex>
+#include <dshow.h>
 #include <thread> 
 #include <chrono>
 #include <conio.h>
+#include <atlimage.h>
 #include <windows.h>
+#include <iostream>
 
 using namespace std;
 
+#pragma comment(lib, "strmiids.lib")
 #include "WindowAPI.h"
 #include "Socket.h"
 #include "Account.h"

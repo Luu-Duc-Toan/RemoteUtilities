@@ -1,11 +1,13 @@
 #include "Header.h"
+#define COMMENT
+
+
 MyCurl myCurl;
 LoginSystem loginSystem;
 Account account;
 WSADATA wsaData;
 ClientSocket client;
 ServerSocket server;
-#define COMMENT
 void GetRole();
 void ClientRun(Role& role);
 void ServerRun(Role& role);
@@ -145,6 +147,9 @@ void GetRole() {
 	}
 	else return; //close app;
 }
+
+
+
 int main() {
 	InitWinsock(wsaData);
 

