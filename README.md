@@ -1,5 +1,5 @@
 # Remote Utilities
-Remote Utilities is a powerful and user-friendly remote desktop software that allows you to connect to and control computers remotely
+Remote Utilities is a powerful and user-friendly remote desktop software that allows you to connect to and control window computers remotely
 
 # Table of Contents
 1. [Installation](#installation)
@@ -9,8 +9,10 @@ Remote Utilities is a powerful and user-friendly remote desktop software that al
 
 # Installation
 - If you dont have **Visual Studio** yet, download [here](https://visualstudio.microsoft.com/downloads/)
-- Download zip (as below image) -> Extract -> Run solution
+- Download zip (as below image)
 ![download](./Images/download.jpg)
+- Extract zip -> Extract the libraries at path: `RemoteUtilities\Source\libs.zip`
+![libraries](./Images/libs.jpg)
 
 # Feature
 - Socket: connect server - client
