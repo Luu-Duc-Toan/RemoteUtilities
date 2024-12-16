@@ -70,6 +70,7 @@ struct Account {
 		this->password = password;
 		this->email = email;
 		this->clientList = clientList;
+		LoadClientID();
 		role = Role::ADMIN;
 	}
 	Account() {

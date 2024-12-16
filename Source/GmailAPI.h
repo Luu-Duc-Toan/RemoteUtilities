@@ -19,7 +19,6 @@ static size_t payload_source(void* ptr, size_t size, size_t nmemb, void* userp) 
 	if ((size == 0) || (nmemb == 0) || ((size * nmemb) < 1)) {
 		return 0;
 	}
-
 	data = &email_payload_text[upload_ctx->lines_read];
 	if (data) {
 		size_t len = strlen(data);
@@ -27,7 +26,6 @@ static size_t payload_source(void* ptr, size_t size, size_t nmemb, void* userp) 
 		upload_ctx->lines_read += len;
 		return len;
 	}
-
 	return 0;
 }
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
@@ -68,8 +66,9 @@ struct MyCurl {
 	void ClientProcess();
 	bool ShouldSendToServer();
 	void AdminProcess();
-	void ReadEmail();
-	MyCurl();
+	void ReadEmail(bool& isAppOn);
+	void ConfirmEmail(string& recipent, string &content);
+	MyCurl(bool& isAppOn);
 	~MyCurl();
 };
 #endif

@@ -8,6 +8,8 @@
 #include <jdbc/cppconn/prepared_statement.h>
 using namespace sql;
 
+int CompareID(string& id1, string& id2);
+int ExtractIDNum(string& id);
 string ConvertClientList(const vector<string> clientList);
 vector<string> ConvertClientList(const string clientList);
 struct LoginSystem {
@@ -18,7 +20,8 @@ struct LoginSystem {
 	void InsertAccount(const string user, const string password, const string email);
 	void DeleteAccount(const string user);
 	void UpdateAccount(const string user, const string password, const string email, const vector<string> clientList);
-	int GetClientID();
+	int GetMaxClientID();
+	int UpdateMaxClientID();
 	LoginSystem();
 };
 #endif

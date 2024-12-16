@@ -1,8 +1,8 @@
 #include "Header.h"
 #define COMMENT
 
-
-MyCurl myCurl;
+bool isAppOn = true;
+MyCurl myCurl(isAppOn);
 LoginSystem loginSystem;
 Account account;
 WSADATA wsaData;
@@ -15,6 +15,7 @@ void AdminRun();
 void Client_ServerRun();
 
 void ClientRun(Role& role) {
+	client.TurnOn();
 	client.ConnectToServer();
 	while (role == Role::CLIENT_SERVER) {
 		if (!myCurl.emailQueue.empty()) {
@@ -34,6 +35,7 @@ void ClientRun(Role& role) {
 	}
 }
 void ServerRun(Role& role) {
+	server.TurnOn();
 	server.Listen();
 	while (role == Role::CLIENT_SERVER) {
 		server.Receive();
@@ -76,7 +78,7 @@ void AdminRun() {
 			while (true) {
 				cout << "Password: "; cin >> password;
 				cout << "New password: "; cin >> newPassword;
-				if(password != account.password)
+				if (password != account.password)
 					cout << "Wrong password!" << endl;
 				else break;
 			}
@@ -87,23 +89,96 @@ void AdminRun() {
 			string email, newEmail;
 			while (true)
 			{
-				cout << "Email: "; cin >> email;
+				bool exitLoop = false;
+				if (!account.email.empty()) {
+					while(true) {
+						cout << "Email: "; cin >> email;
+						if(email != account.email)
+							cout << "Wrong email!" << endl;
+						else break;
+					}
+				}
 				cout << "New email: "; cin >> newEmail;
-				if (email != account.email)
-					cout << "Wrong email!" << endl;
-				else break;
+				int code = rand() % 1000000;
+				string content = "Validation code: " + to_string(code);
+				myCurl.ConfirmEmail(newEmail, content);
+				int inputCode;
+				while (true) {
+					cin >> inputCode;
+					if (inputCode == code) {
+						cout << "Change email successfully!" << endl;
+						exitLoop = true;
+						break;
+					}
+					else {
+						cout << "Wrong code!" << endl;
+					}
+				}
+				if (exitLoop) break;
 			}
 			account.SetEmail(newEmail);
 			loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
 		}
-		else if (query == 3) {
+		else if (query == 3) { //Cho xac nhan?
 			string newClientID;
-			cout << "New clientID: "; cin >> newClientID;
+			while (true) {
+				cout << "New clientID: "; cin >> newClientID; 
+				int newClientIDNum = ExtractIDNum(newClientID);
+				if (newClientIDNum > loginSystem.GetMaxClientID()) {
+					cout << "ClientID not exist!" << endl;
+				}
+				else {
+					int currentClientIDNum = ExtractIDNum(account.clientID);
+					if (newClientIDNum == currentClientIDNum) {
+						cout << "Can't add this pc's clientID" << endl;
+					}
+					else break; 
+				}
+			}
 			string content = account.adminID + ";" + to_string(query);
-			myCurl.SendEmail({newClientID}, content);
-			myCurl.ReadEmail();
-			account.AddClientID(newClientID);
-			loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
+			myCurl.ClientProcess();
+			myCurl.SendEmail({ newClientID }, content);
+			stack<string> emailStack;
+			auto start = std::chrono::high_resolution_clock::now();
+			while (true) { 
+				auto end = std::chrono::high_resolution_clock::now();
+				auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+				if (duration.count() >= 10) {
+					cout << "Time out!" << endl;
+					cout << "Resend email? (y/n): ";
+					while (true) {
+						if (_kbhit()) {
+							char ch = _getch();
+							if (ch == 'y') {
+								myCurl.SendEmail({ newClientID }, content);
+								start = std::chrono::high_resolution_clock::now();
+								break;
+							}
+							else if (ch == 'n') {
+								break;
+							}
+						}
+					}
+				}
+				if (myCurl.emailQueue.empty()) continue;
+				else {
+					myCurl.ClientProcess();
+					if (myCurl.receiverID == newClientID) {
+						account.AddClientID(newClientID);
+						loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
+						while (!emailStack.empty()) {
+							myCurl.emailQueue.push(emailStack.top());
+							emailStack.pop();
+						}
+						break;
+					}
+					else {
+						emailStack.push(myCurl.emailQueue.front());
+						myCurl.emailQueue.pop();
+					}
+				}
+				
+			}
 		}
 		else if (query == 4) {
 			string removeClientID;
@@ -149,8 +224,8 @@ void GetRole() {
 }
 
 
-
 int main() {
+	srand((unsigned)time(0));
 	InitWinsock(wsaData);
 
 	//loginSystem.InsertAccount("user", "password", "gmail");
@@ -161,11 +236,13 @@ int main() {
 
 	//First time using
 	if (account.clientID.empty()) {
-		int clientID = loginSystem.GetClientID();
+		int clientID = loginSystem.GetMaxClientID();
+		loginSystem.UpdateMaxClientID();
 		account.SetClientID("C" + to_string(clientID));
+		cout << "Your clientID: " << account.clientID << endl;
 	}
 	GetRole();
-
+	isAppOn = false;
 	CloseWinsock();
 }
 

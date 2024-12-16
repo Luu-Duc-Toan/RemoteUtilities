@@ -1,5 +1,21 @@
 #include "LoginSystem.h"
 
+int CompareID(string& id1, string& id2) {
+	int n = min(id1.size(), id2.size());
+	for (int i = 1; i < n; i++) {
+		if (id1[i] < id2[i]) return -1;
+		if (id1[i] > id2[i]) return 1;
+	}
+	return 0;
+}
+int ExtractIDNum(string& id) {
+	int num = 0;
+	int n = id.size();
+	for (int i = 1; i < n; i++) {
+		num = num * 10 + id[i] - '0';
+	}
+	return num;
+}
 string ConvertClientList(const vector<string> clientList) {
 	string clientListString = "";
 	for (int i = 0; i < clientList.size(); i++) {
@@ -62,7 +78,7 @@ bool LoginSystem::SearchAccount(const string user, const string password, Accoun
 	if (password == passwordTmp)
 	{
 		cout << "Log in successfully!" << endl;
-		account = Account(idTmp, userTmp, passwordTmp, emailTmp, clientListTmp);
+
 		return true;
 	}
 	else {
@@ -109,19 +125,26 @@ void LoginSystem::UpdateAccount(const string user, const string password, const 
 	cout << "Values updated successfully!" << endl;
 	delete pstmt;
 }
-int LoginSystem::GetClientID() {
+int LoginSystem::GetMaxClientID() {
 	sql::PreparedStatement* pstmt = con->prepareStatement(
 		"SELECT * FROM clientID"
 	);
 	ResultSet* res = pstmt->executeQuery();
 	if (!res->next()) return -1;
 	int clientID = res->getInt("id");
-	pstmt = con->prepareStatement(
+	delete pstmt;
+	delete res;
+	return clientID;
+}
+int LoginSystem::UpdateMaxClientID() {
+	int clientID = GetMaxClientID();
+	sql::PreparedStatement* pstmt = con->prepareStatement(
 		"UPDATE clientID SET id = ? WHERE id = ?"
 	);
 	pstmt->setInt(1, clientID + 1);
 	pstmt->setInt(2, clientID);
 	pstmt->executeUpdate();
+	ResultSet* res = pstmt->executeQuery();
 	delete pstmt;
 	delete res;
 	return clientID;

