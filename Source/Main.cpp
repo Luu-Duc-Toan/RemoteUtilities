@@ -8,6 +8,7 @@ Account account;
 WSADATA wsaData;
 ClientSocket client;
 ServerSocket server;
+ConfirmationCurl confirmationCurl;
 void GetRole();
 void ClientRun(Role& role);
 void ServerRun(Role& role);
@@ -19,16 +20,18 @@ void ClientRun(Role& role) {
 	client.ConnectToServer();
 	while (role == Role::CLIENT_SERVER) {
 		if (!myCurl.emailQueue.empty()) {
-			myCurl.ClientProcess();
+			myCurl.Preprocess();
 			myCurl.emailQueue.pop();
 			string content = account.clientID;
 			if (myCurl.ShouldSendToServer()) {
 				client.Send(myCurl.query.c_str());
 				client.Receive();
-				content += ";" + string(client.buffer);
+				content += ";" + myCurl.query + ";" + string(client.buffer);
 			}
 			else {
-				content += ";" + myCurl.result;
+				myCurl.ClientProcess();
+				content += ";" + myCurl.query + ";" + myCurl.result;
+				cout << "Send email to " << myCurl.receiverID << endl;
 			}
 			myCurl.SendEmail({ myCurl.receiverID }, content);
 		}
@@ -45,34 +48,29 @@ void Client_ServerRun() {
 	myCurl.isAutoReceiving = true;
 	thread serverThread(ServerRun, ref(account.role));
 	thread clientThread(ClientRun, ref(account.role));
+	cout << "S to break: ";
 	while (true) {
-		if (_kbhit()) {
-			char ch = _getch();
-			if (ch == 's') {
-				myCurl.isAutoReceiving = false;
-				account.role = Role::NONE;
-				break;
-			}
+		char ch;
+		cin >> ch; //Not this
+		if (ch == 's') {
+			myCurl.isAutoReceiving = false;
+			account.role = Role::NONE;
+			break;
 		}
 	}
-	clientThread.join();
-	serverThread.join();
 	client.Reset();
 	server.Reset();
+	clientThread.join();
+	serverThread.join();
 	return GetRole();
 }
 void AdminRun() {
 	myCurl.isAutoReceiving = true;
 	while (true) {
 		int query = -1;
-		cout << "Query: ";  cin >> query;
+		cout << "Query: ";  
+		cin >> query;
 		if (query == -1) continue;
-		else if (query == -2) { //exit
-			//log out,
-			myCurl.isAutoReceiving = false;
-			account.role = Role::NONE;
-			break;
-		}
 		else if (query == 1) { //for 1 - 10: dont need to send email: change password, email
 			string password, newPassword;
 			while (true) {
@@ -100,8 +98,9 @@ void AdminRun() {
 				}
 				cout << "New email: "; cin >> newEmail;
 				int code = rand() % 1000000;
+				cout << "Code: " << code << endl;
 				string content = "Validation code: " + to_string(code);
-				myCurl.ConfirmEmail(newEmail, content);
+				confirmationCurl.Send(newEmail, content);
 				int inputCode;
 				while (true) {
 					cin >> inputCode;
@@ -121,72 +120,101 @@ void AdminRun() {
 		}
 		else if (query == 3) { //Cho xac nhan?
 			string newClientID;
-			while (true) {
-				cout << "New clientID: "; cin >> newClientID; 
+			while (true) { 
+				cout << "New clientID: "; cin >> newClientID;
+				bool validNewClientID = true;
 				int newClientIDNum = ExtractIDNum(newClientID);
+				int currentClientIDNum = ExtractIDNum(account.clientID);
 				if (newClientIDNum > loginSystem.GetMaxClientID()) {
 					cout << "ClientID not exist!" << endl;
+					validNewClientID = false;
+				}
+				else if(newClientIDNum == currentClientIDNum){
+						cout << "Can't add this pc's clientID" << endl;
+						validNewClientID = false;
 				}
 				else {
-					int currentClientIDNum = ExtractIDNum(account.clientID);
-					if (newClientIDNum == currentClientIDNum) {
-						cout << "Can't add this pc's clientID" << endl;
+					for (string& clientID : account.clientList) {
+						int clientIDNum = ExtractIDNum(clientID);
+						if (newClientIDNum == clientIDNum) {
+							cout << "ClientID already exist!" << endl;
+							validNewClientID = false;
+						}
 					}
-					else break; 
 				}
+				if (validNewClientID) break;
 			}
 			string content = account.adminID + ";" + to_string(query);
-			myCurl.ClientProcess();
 			myCurl.SendEmail({ newClientID }, content);
 			stack<string> emailStack;
 			auto start = std::chrono::high_resolution_clock::now();
 			while (true) { 
 				auto end = std::chrono::high_resolution_clock::now();
 				auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-				if (duration.count() >= 10) {
+				if (duration.count() >= 600) {
 					cout << "Time out!" << endl;
-					cout << "Resend email? (y/n): ";
-					while (true) {
-						if (_kbhit()) {
-							char ch = _getch();
-							if (ch == 'y') {
-								myCurl.SendEmail({ newClientID }, content);
-								start = std::chrono::high_resolution_clock::now();
-								break;
-							}
-							else if (ch == 'n') {
-								break;
-							}
-						}
+					cout << "Resend email? (send again/wait/exit): " << endl;
+					char input = 'o';
+					cin >> input;
+					if (input == 's') {
+						myCurl.SendEmail({ newClientID }, content);
+						start = std::chrono::high_resolution_clock::now();
+					}
+					else if(input == 'w') {
+						start = std::chrono::high_resolution_clock::now();
+					}
+					else {
+						break;
 					}
 				}
 				if (myCurl.emailQueue.empty()) continue;
 				else {
-					myCurl.ClientProcess();
+					myCurl.Preprocess();
 					if (myCurl.receiverID == newClientID) {
-						account.AddClientID(newClientID);
-						loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
-						while (!emailStack.empty()) {
-							myCurl.emailQueue.push(emailStack.top());
-							emailStack.pop();
+						if (myCurl.query == "3") {
+							if (myCurl.subContent == "Y") {
+								cout << "Add new clientID" << newClientID << endl;
+								account.AddClientID(newClientID);
+								loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
+							}
+							else {
+								cout << "Receive from " << newClientID << " " << myCurl.subContent << endl;
+								cout << "Don't add new clientID" << newClientID << endl;
+							}
+							while (!emailStack.empty()) {
+								myCurl.emailQueue.push(emailStack.top());
+								emailStack.pop();
+							}
+							break;
 						}
-						break;
 					}
 					else {
 						emailStack.push(myCurl.emailQueue.front());
 						myCurl.emailQueue.pop();
 					}
 				}
-				
 			}
 		}
 		else if (query == 4) {
 			string removeClientID;
-			cout << "Remove clientID: "; cin >> removeClientID;
-			account.RemoveClientID(removeClientID);
-			loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
+			cout << "Remove clientID: "; 
+			while (true) {
+				cin >> removeClientID;
+				if (account.RemoveClientID(removeClientID)) {
+					loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
+				}
+				else {
+					cout << "ClientID not exist!" << endl;
+					cout << "Remove clientID: ";
+				}
+			}
 		}
-		else if (query == 23) { //for 11 - ...
+		else if (query == 5) {
+			myCurl.isAutoReceiving = false;
+			account.Reset();
+			break;
+		}
+		else if (query > 10) { //for 11 - ...
 			//if query need to send email: listApp, add clientID, remove clientID,...
 			string content = account.adminID + ";" + to_string(query);
 			myCurl.SendEmail(account.clientList, content);

@@ -25,14 +25,15 @@ struct Account {
 	void AddClientID(const string clientIDs) {
 		clientList.push_back(clientIDs);
 	}
-	void RemoveClientID(const string clientID) {
+	bool RemoveClientID(const string clientID) {
 		int n = clientList.size();
 		for (int i = 0; i < n; i++) {
 			if (clientID == clientList[i]) {
 				clientList.erase(clientList.begin() + i);
-				break;
+				return true;
 			}
 		}
+		return false;
 	}
 	void SetPassword(const string password) {
 		this->password = password;
@@ -63,15 +64,14 @@ struct Account {
 		file.write(&clientID[0], length);
 		file.close();
 	}
-	Account(const string id, const string user, const string password, 
-		const string email, const vector<string> clientList) {
-		this->adminID = id;
-		this->user = user;
-		this->password = password;
-		this->email = email;
-		this->clientList = clientList;
-		LoadClientID();
-		role = Role::ADMIN;
+	void Reset() {
+		this->clientID = "";
+		this->adminID = "";
+		this->user = "";
+		this->password = "";
+		this->email = "";
+		this->clientList = {};
+		role = Role::NONE;
 	}
 	Account() {
 		this->adminID = "";

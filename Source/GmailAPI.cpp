@@ -3,28 +3,29 @@
 string imapsURL = "imaps://imap.gmail.com:993/RemoteUltilities";
 string smtpURL = "smtp://smtp.gmail.com:587";
 string email_payload_text = "";
+string confirmation_payload_text = "";
+
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
 	((string*)userp)->append((char*)contents, size * nmemb);
 	return size * nmemb;
 }
 void ExtractEmailBody(string& buffer) {
 	size_t bodyStart = buffer.find("\r\n\r\n");
-	size_t bodyEnd = buffer.find("\r\n\r\n", bodyStart + 4);
-	buffer = buffer.substr(bodyStart + 4, bodyEnd - bodyStart);
+	buffer = buffer.substr(0, bodyStart);
 }
 
 void MyCurl::CreateEmail(const string id, const string content) {
 	email_payload_text =
-		"Subject:" + id + "\r\n"
-		"\r\n"
-		+ content + "\r\n";
+		"Subject:" + id + "\r\n\r\n"
+		+ content + "\r\n\r\n";
 }
 void MyCurl::ConfirmEmail(string& recipent, string &content) {
 	email_payload_text =
-		"Subject: Confirm email\r\n"
-		"\r\n"
-		+ content + "\r\n";
-	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipent);
+		"Subject: Confirm email\r\n\r\n"
+		+ content + "\r\n\r\n";
+	curl_slist* recipientTmp = nullptr;
+	recipientTmp = curl_slist_append(nullptr, recipent.c_str());
+	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipientTmp);
 	res = curl_easy_perform(sender);
 	// Check for errors
 	if (res != CURLE_OK) {
@@ -33,10 +34,15 @@ void MyCurl::ConfirmEmail(string& recipent, string &content) {
 	else {
 		cout << "Email sent successfully!" << endl;
 	}
+	if (recipientTmp) {
+		curl_slist_free_all(recipientTmp);
+		recipientTmp = nullptr;
+	}
 	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipients);
 }
 
 void MyCurl::InitSender() {
+	sender = curl_easy_init();
 	//Set the SMTP server URL
 	curl_easy_setopt(sender, CURLOPT_URL, smtpURL.c_str());
 	// Enable TLS for secure connection
@@ -69,7 +75,8 @@ void MyCurl::InitReceiverSession(string& URL) {
 }
 void MyCurl::CleanSession(CURL*& session, string& buffer) {
 	buffer.clear();
-	curl_easy_cleanup(session);
+	if(session) 
+		curl_easy_cleanup(session);
 	session = nullptr;
 }
 vector<int> MyCurl::GetListUIDUnseen() {
@@ -84,6 +91,7 @@ vector<int> MyCurl::GetListUIDUnseen() {
 }
 void MyCurl::SendEmail(const vector<string> IDs, const string content) {
 	for (auto& id : IDs) {
+		InitSender();
 		CreateEmail(id, content);
 		res = curl_easy_perform(sender);
 		// Check for errors
@@ -93,12 +101,13 @@ void MyCurl::SendEmail(const vector<string> IDs, const string content) {
 		else {
 			cout << "Email sent successfully!" << endl;
 		}
+		CleanSession(sender, email_payload_text);
 	}
 }
 void MyCurl::ReadEmail(bool &isAppOn) {
-	if (!isAutoReceiving) return;
 	while (isAppOn) {
-		if (searchQuery.empty()) return;
+		if (!isAutoReceiving) continue;
+		if (searchQuery.empty()) continue;
 		//Search
 		InitReceiverSession(imapsURL);
 		curl_easy_setopt(receiver, CURLOPT_CUSTOMREQUEST, searchQuery.c_str());
@@ -115,7 +124,6 @@ void MyCurl::ReadEmail(bool &isAppOn) {
 			ExtractEmailBody(receiveBuffer);
 			//***********************************************************************************
 			emailQueue.push(receiveBuffer);
-			cout << "Email Body " << UID << ": " << receiveBuffer << endl;
 			CleanSession(receiver, receiveBuffer);
 		}
 		UIDs.clear();
@@ -126,9 +134,9 @@ void MyCurl::UpdateSearchQuery(string id) {
 		searchQuery = "";
 		return;
 	}
-	searchQuery = "UID SEARCH UNSEEN" + id;
+	searchQuery = "UID SEARCH UNSEEN SUBJECT " + id;
 }
-void MyCurl::ClientProcess() {
+void MyCurl::Preprocess() {
 	string emailContent = emailQueue.front();
 	int start = 0;
 	int end = emailContent.find(';', start);
@@ -137,8 +145,25 @@ void MyCurl::ClientProcess() {
 	end = emailContent.find(';', start);
 	query = emailContent.substr(start, end - start);
 	start = end + 1;
-	end = emailContent.find(';', start);
-	subContent = emailContent.substr(end + 1);
+	subContent = emailContent.substr(start);
+}
+void MyCurl::ClientProcess() {
+	int queryInt = stoi(query);
+	if (queryInt == 3) {
+		char ch;
+		while (true) {
+			cout << "Accept control from " << receiverID << "? (y/n): ";
+			cin >> ch;
+			if (ch == 'y') {
+				result = 'Y';
+				break;
+			}
+			else if (ch == 'n') {
+				result = 'N';
+				break;
+			}
+		}
+	}
 }
 void MyCurl::AdminProcess() {
 	string emailContent = emailQueue.front();
@@ -154,23 +179,7 @@ void MyCurl::AdminProcess() {
 }
 bool MyCurl::ShouldSendToServer() {
 	int queryInt = stoi(query);
-	if (queryInt == 3) {
-		cout << "Accept control from " << receiverID << "? (y/n): ";
-		while (true) {
-			if (_kbhit()) {
-				char ch = _getch();
-				if (ch == 'y') {
-					result = 'Y';
-					break;
-				}
-				else if (ch == 'n') {
-					result = 'N';
-					break;
-				}
-			}
-		}
-		return false;
-	}
+	return queryInt > 10;
 }
 MyCurl::MyCurl(bool& isAppOn) {
 	role = Role::NONE;

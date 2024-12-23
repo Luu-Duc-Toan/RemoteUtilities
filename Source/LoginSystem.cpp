@@ -78,7 +78,11 @@ bool LoginSystem::SearchAccount(const string user, const string password, Accoun
 	if (password == passwordTmp)
 	{
 		cout << "Log in successfully!" << endl;
-
+		account.adminID = idTmp;
+		account.user = userTmp;
+		account.password = passwordTmp;
+		account.email = emailTmp;
+		account.clientList = clientListTmp;
 		return true;
 	}
 	else {
