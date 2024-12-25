@@ -24,6 +24,7 @@
 #include <atlimage.h>
 #include <windows.h>
 #include <iostream>
+#include <unordered_set>
 using namespace std;
 
 #pragma comment(lib, "strmiids.lib")

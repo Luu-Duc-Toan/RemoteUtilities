@@ -217,7 +217,9 @@ void AdminRun() {
 		else if (query > 10) { //for 11 - ...
 			//if query need to send email: listApp, add clientID, remove clientID,...
 			string content = account.adminID + ";" + to_string(query);
+			//Choose clientID
 			myCurl.SendEmail(account.clientList, content);
+			myCurl.AdminProcess(account.clientList, query);
 		}
 	}
 	return GetRole();
@@ -314,5 +316,4 @@ int main() {
 //	}
 //}
 #endif
-
 
