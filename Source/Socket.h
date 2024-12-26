@@ -42,6 +42,16 @@ struct ServerSocket {
 			exit(1);
 		}
 	}
+	string GetFilePath() {
+		int index = 0;
+		string fileName = "";
+		while (buffer[index] != '\0')
+		{
+			fileName.push_back(buffer[index]);
+			index++;
+		}
+		return fileName;
+	}
 	void SetSocketOption() {
 		int opt = 1;
 		if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt)) == SOCKET_ERROR) {
@@ -96,12 +106,11 @@ struct ServerSocket {
 		cout << "Message: " << result << endl;
 	}
 	void ProcessClientMessage();
-	void Receive() {
+	int  Receive() {
 		int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
 		if (bytesReceived > 0) {
 			buffer[bytesReceived] = '\0';
 			cout << "Message from client: " << buffer << endl;
-			ProcessClientMessage();
 		}
 		else if (bytesReceived == 0) {
 			cout << "Connection closed" << endl;
@@ -109,6 +118,11 @@ struct ServerSocket {
 		else {
 			cout << "Receive failed: " << WSAGetLastError() << endl;
 		}
+		return bytesReceived;
+	}
+	void WaitQuery() {
+		int bytesReceived = Receive();
+		if(bytesReceived > 0) ProcessClientMessage();
 	}
 	void Close() {
 		if (clientSocket != INVALID_SOCKET) {

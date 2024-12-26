@@ -24,7 +24,7 @@ void ClientRun(Role& role) {
 			myCurl.emailQueue.pop();
 			if (myCurl.ShouldSendToServer()) {
 				client.Send(myCurl.query.c_str());
-				if (myCurl.query == "20") {
+				if (myCurl.query == "20" || myCurl.query == "21") {
 					client.Send(myCurl.subContent.c_str());
 				}
 				client.Receive();
@@ -40,7 +40,7 @@ void ServerRun(Role& role) {
 	server.TurnOn();
 	server.Listen();
 	while (role == Role::CLIENT_SERVER) {
-		server.Receive();
+		server.WaitQuery();
 	}
 }
 void Client_ServerRun() {
@@ -216,7 +216,7 @@ void AdminRun() {
 		else if (query > 10) { //for 11 - ...
 			//if query need to send email: listApp, add clientID, remove clientID,...
 			myCurl.result = "";
-			if (query == 20) {
+			if (query == 20 || query == 21) {
 				cout << "Nhap duong dan file: ";
 				string filePath;
 				cin >> myCurl.result;

