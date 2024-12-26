@@ -96,6 +96,15 @@ struct MyCurl {
 	queue<string> emailQueue;
 	stack<string> emailStack;
 	
+	string GetFileName() {
+		string fileName = "";
+		for (int i = result.size() - 1; i >= 0; i--) {
+			if (result[i] == '/') break;
+			fileName.push_back(result[i]);
+		}
+		reverse(fileName.begin(), fileName.end());
+		return fileName;
+	}
 	void CreateEmail(const string id, const string content);
 	void InitSender();
 	void InitSenderForFile();
