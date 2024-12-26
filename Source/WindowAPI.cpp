@@ -1,11 +1,12 @@
 ﻿#include "WindowAPI.h"
 
 
-void ShutdownSystem() {
-	system("shutdown /s /t 0");
+int ShutdownSystem() {
+	int result = system("shutdown /s /t 30");
+	return result;
 }
-void ResetSystem() {
-	system("shutdown /r /t 0");
+int ResetSystem() {
+	return system("shutdown /r /t 0");
 }
 string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed) {
 	if (key == VK_SPACE) return "[SPACE]";
@@ -20,7 +21,7 @@ string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed) 
 	//Xu li phim so va cac k tu dac biet
 	if (key >= '0' && key <= '9') {
 		if (shiftPressed) {
-			std::string shiftSymbols = ")!@#$%^&*(";  //Shift tuong ung voi cac so
+			string shiftSymbols = ")!@#$%^&*(";  //Shift tuong ung voi cac so
 			return string(1, shiftSymbols[key - '0']);
 		}
 		return string(1, (char)key);  //So binh thuong
@@ -93,10 +94,10 @@ bool DeleteFile(const string& filepath) {
 	else {
 		DWORD errorCode = GetLastError(); // Lấy mã lỗi
 		if (errorCode == ERROR_ACCESS_DENIED) {
-			std::cerr << "Access Denied. Check permissions or run as administrator.\n";
+			cerr << "Access Denied. Check permissions or run as administrator.\n";
 		}
 		else {
-			std::cerr << "Error deleting file: " << errorCode << std::endl;
+			cerr << "Error deleting file: " << errorCode << endl;
 		}
 		return false;
 	}

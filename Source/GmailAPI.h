@@ -12,6 +12,10 @@ extern string confirmation_payload_text;
 struct upload_status {
 	int lines_read;
 };
+static const string base64_chars =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+"abcdefghijklmnopqrstuvwxyz"
+"0123456789+/";
 
 static size_t payload_source(void* ptr, size_t size, size_t nmemb, void* userp) {
 	upload_status* upload_ctx = (upload_status*)userp;
@@ -22,7 +26,7 @@ static size_t payload_source(void* ptr, size_t size, size_t nmemb, void* userp) 
 	}
 	data = &email_payload_text[upload_ctx->lines_read];
 	if (data) {
-		size_t len = email_payload_text.size();
+		size_t len = min(size * nmemb, email_payload_text.size() - upload_ctx->lines_read);
 		memcpy(ptr, data, len);
 		upload_ctx->lines_read += len;
 		return len;
@@ -48,7 +52,6 @@ static size_t payload_source_confirmation(void* ptr, size_t size, size_t nmemb, 
 static size_t payload_source_file(void* ptr, size_t size, size_t nmemb, void* userp) {
 	upload_status* upload_ctx = (upload_status*)userp;
 	const char* data;
-
 	if ((size == 0) || (nmemb == 0) || ((size * nmemb) < 1)) {
 		return 0;
 	}
@@ -61,6 +64,10 @@ static size_t payload_source_file(void* ptr, size_t size, size_t nmemb, void* us
 	}
 	return 0;
 }
+
+string base64_encode(const string& input);
+string base64_decode(const string& input);
+
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 void ExtractEmailBody(string& buffer);
 struct MyCurl {

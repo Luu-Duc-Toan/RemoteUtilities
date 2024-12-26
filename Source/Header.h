@@ -25,6 +25,7 @@
 #include <windows.h>
 #include <iostream>
 #include <unordered_set>
+#include <algorithm>
 using namespace std;
 
 #pragma comment(lib, "strmiids.lib")

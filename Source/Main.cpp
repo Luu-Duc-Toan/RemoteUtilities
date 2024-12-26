@@ -1,4 +1,4 @@
-#include "Header.h"
+﻿#include "Header.h"
 #define COMMENT
 
 bool isAppOn = true;
@@ -26,11 +26,11 @@ void ClientRun(Role& role) {
 			if (myCurl.ShouldSendToServer()) {
 				client.Send(myCurl.query.c_str());
 				client.Receive();
-				content += ";" + myCurl.query + ";" + string(client.buffer);
+				content += ";" + myCurl.query + ";" + client.result + ";";
 			}
 			else {
 				myCurl.ClientProcess();
-				content += ";" + myCurl.query + ";" + myCurl.result;
+				content += ";" + myCurl.query + ";" + myCurl.result + ";";
 				cout << "Send email to " << myCurl.receiverID << endl;
 			}
 			myCurl.SendEmail({ myCurl.receiverID }, content);
@@ -144,13 +144,13 @@ void AdminRun() {
 				}
 				if (validNewClientID) break;
 			}
-			string content = account.adminID + ";" + to_string(query);
+			string content = account.adminID + ";" + to_string(query) + ";";
 			myCurl.SendEmail({ newClientID }, content);
 			stack<string> emailStack;
-			auto start = std::chrono::high_resolution_clock::now();
+			auto start = chrono::high_resolution_clock::now();
 			while (true) { 
-				auto end = std::chrono::high_resolution_clock::now();
-				auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+				auto end = chrono::high_resolution_clock::now();
+				auto duration = chrono::duration_cast<chrono::seconds>(end - start);
 				if (duration.count() >= 600) {
 					cout << "Time out!" << endl;
 					cout << "Resend email? (send again/wait/exit): " << endl;
@@ -158,10 +158,10 @@ void AdminRun() {
 					cin >> input;
 					if (input == 's') {
 						myCurl.SendEmail({ newClientID }, content);
-						start = std::chrono::high_resolution_clock::now();
+						start = chrono::high_resolution_clock::now();
 					}
 					else if(input == 'w') {
-						start = std::chrono::high_resolution_clock::now();
+						start = chrono::high_resolution_clock::now();
 					}
 					else {
 						break;
@@ -216,7 +216,7 @@ void AdminRun() {
 		}
 		else if (query > 10) { //for 11 - ...
 			//if query need to send email: listApp, add clientID, remove clientID,...
-			string content = account.adminID + ";" + to_string(query);
+			string content = account.adminID + ";" + to_string(query) + ";" + ";";
 			//Choose clientID
 			myCurl.SendEmail(account.clientList, content);
 			myCurl.AdminProcess(account.clientList, query);
@@ -316,4 +316,3 @@ int main() {
 //	}
 //}
 #endif
-

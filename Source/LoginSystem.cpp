@@ -39,7 +39,7 @@ void LoginSystem::ConnectDatabase() {
 		// Initialize the MySQL driver
 		driver = sql::mysql::get_mysql_driver_instance();
 		if (!driver) {
-			std::cerr << "Failed to initialize MySQL driver!" << std::endl;
+			cerr << "Failed to initialize MySQL driver!" << endl;
 		}
 		// Establish the connection to the database
 		con = driver->connect("tcp://bkfy5wyg0h1ccu52fvxy-mysql.services.clever-cloud.com:3306",
@@ -50,9 +50,9 @@ void LoginSystem::ConnectDatabase() {
 		con->setSchema("bkfy5wyg0h1ccu52fvxy");
 	}
 	catch (sql::SQLException& e) {
-		std::cerr << "Error: " << e.what() << std::endl;
-		std::cerr << "SQLState: " << e.getSQLState() << std::endl;
-		std::cerr << "Error Code: " << e.getErrorCode() << std::endl;
+		cerr << "Error: " << e.what() << endl;
+		cerr << "SQLState: " << e.getSQLState() << endl;
+		cerr << "Error Code: " << e.getErrorCode() << endl;
 	}
 }
 bool LoginSystem::SearchAccount(const string user, const string password, Account &account) {

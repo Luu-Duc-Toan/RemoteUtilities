@@ -46,7 +46,7 @@ struct Account {
 		file.open("_Data/ClientID.bin", ios::binary | ios::in);
 
 		if (!file.is_open()) {
-			std::cerr << "File does not exist or cannot be opened.\n";
+			cerr << "File does not exist or cannot be opened.\n";
 			return;
 		}
 

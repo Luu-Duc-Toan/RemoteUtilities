@@ -21,6 +21,7 @@ void ServerSocket::ProcessClientMessage() {
 	//When result == "N"?
 	int query = 0;
 	int index = 0;
+	bool sent = false;
 	while (buffer[index] != '\0' && buffer[index] <= '9' && buffer[index] >= '0') {
 		query = query * 10 + buffer[index] - '0';
 		index++;
@@ -42,16 +43,26 @@ void ServerSocket::ProcessClientMessage() {
 			file.read(buffer, sizeof(buffer));
 			send(clientSocket, buffer, sizeof(buffer), 0);
 		}
+		file.close();
+		sent = true;
 	}
 	else if (query == 17) {
-		//How to send message to client, admin after Shut down?
-		ShutdownSystem();
-		result = "Y";
+		int shutdownStatus = ShutdownSystem();
+		if (shutdownStatus == 0) {
+			result = "Y";
+		} 
+		else {
+			result = "N";
+		}
 	}
 	else if (query == 18) {
-		//How to send message to client, admin after Reset?
-		ResetSystem();
-		result = "Y";
+		int resetStatus = ResetSystem();
+		if (resetStatus == 0) {
+			result = "Y";
+		}
+		else {
+			result = "N";
+		}
 	}
 	else if (query == 21) {
 		string filePath = "";
@@ -105,6 +116,8 @@ void ServerSocket::ProcessClientMessage() {
 		isWebcamOn = false;
 		result = "Y";
 	}
+	if (sent) return;
+	Send();
 }
 void ServerSocket::TurnOn() {
 	isKeyloggerOn = false;
@@ -121,5 +134,41 @@ void ServerSocket::TurnOn() {
 		WSACleanup();
 	}
 	BindSocket();
+}
+void ClientSocket::Receive() {
+	int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+	if (bytesReceived > 0) {
+		buffer[bytesReceived] = '\0';
+		cout << "Message from server: " << buffer << endl;
+		if (buffer[0] == 'F') {
+			//file
+			result = "";
+			size_t fileSize = 0;
+			int index = 1;
+			while (buffer[index] != '\0') {
+				fileSize = fileSize * 10 + buffer[index] - '0';
+				index++;
+			}
+			while (fileSize - result.size() >= maxBufferSize) {
+				recv(clientSocket, buffer, maxBufferSize, 0);
+				for (int i = 0; i < maxBufferSize; i++) result += buffer[i];
+			}
+			int remainByte = fileSize - result.size();
+			if (remainByte != 0) {
+				recv(clientSocket, buffer, remainByte, 0);
+				for (int i = 0; i < remainByte; i++) result += buffer[i];
+			}
+			result = base64_encode(result);
+		}
+		else if (buffer[0] == 'L') {
+			//List app,...
+		}
+	}
+	else if (bytesReceived == 0) {
+		cout << "Connection closed" << endl;
+	}
+	else {
+		cout << "Receive failed: " << WSAGetLastError() << endl;
+	}
 }
 

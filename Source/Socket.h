@@ -127,9 +127,9 @@ struct ServerSocket {
 		isKeyloggerOn = false;
 		isWebcamOn = false;
 		isServerOn = false;
-		if (keyloggerThread.joinable()) 
+		if (keyloggerThread.joinable())
 			keyloggerThread.join();
-		if (webcamThread.joinable()) 
+		if (webcamThread.joinable())
 			webcamThread.join();
 	}
 	~ServerSocket() {
@@ -141,7 +141,8 @@ struct ServerSocket {
 struct ClientSocket {
 	SOCKET clientSocket;
 	addrinfo* serverAddr = NULL;
-	char buffer[512];
+	string result;
+	char buffer[maxBufferSize];
 
 	void GetHostName(char*& hostname) {
 		const int length = 256;
@@ -169,12 +170,12 @@ struct ClientSocket {
 	}
 	void ConnectToServer() {
 		cout << "Waiting Server..." << endl;
-		while(connect(clientSocket, serverAddr->ai_addr, (int)serverAddr->ai_addrlen) == SOCKET_ERROR)
+		while (connect(clientSocket, serverAddr->ai_addr, (int)serverAddr->ai_addrlen) == SOCKET_ERROR)
 		{
 			Sleep(10);
 		}
 		cout << "Connected to server!" << endl;
-		if (serverAddr) 
+		if (serverAddr)
 			freeaddrinfo(serverAddr);
 	}
 	void Shutdown() {
@@ -188,40 +189,7 @@ struct ClientSocket {
 		send(clientSocket, message, strlen(message), 0);
 		cout << "Message: " << message << endl;
 	}
-	void Receive() {
-		int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
-		if (bytesReceived > 0) {
-			buffer[bytesReceived] = '\0';
-			cout << "Message from server: " << buffer << endl;
-			if (buffer[0] == 'F') {
-				//file
-				size_t fileSize = 0;
-				int index = 1;
-				while (buffer[index] != '\0') {
-					fileSize = fileSize * 10 + buffer[index] - '0';
-					index++;
-				}
-				string bitString = "";
-				while (bitString.size() != fileSize) {
-					recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
-					bitString += string(buffer);
-				}
-				//For testing
-				fstream output("_Data/output.txt", ios::binary | ios::out);
-				output << bitString;
-				output.close();
-			}
-			else if (buffer[0] == 'L') {
-				//List app,...
-			}
-		}
-		else if (bytesReceived == 0) {
-			cout << "Connection closed" << endl;
-		}
-		else {
-			cout << "Receive failed: " << WSAGetLastError() << endl;
-		}
-	}
+	void Receive();
 	void Close() {
 		if (clientSocket != INVALID_SOCKET) {
 			closesocket(clientSocket);
