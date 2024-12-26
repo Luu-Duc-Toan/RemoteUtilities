@@ -2,7 +2,7 @@
 
 bool initWinsock = false;
 void InitWinsock(WSADATA& wsadata) {
-	if (initWinsock) return; 
+	if (initWinsock) return;
 	WSADATA wsaData;
 	int iResult;
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -26,42 +26,45 @@ void ServerSocket::ProcessClientMessage() {
 		query = query * 10 + buffer[index] - '0';
 		index++;
 	}
-	if (query == 20) { //Copy file
-		string fileName;
-		while (buffer[index] != '\0') {
-			fileName += buffer[index];
-			index++;
-		}
-		fstream file(fileName, ios::binary | ios::in);
-		file.seekg(0, ios::end);
-		size_t fileSize = file.tellg();
-		file.seekg(0, ios::beg);
-		result = "F" + to_string(fileSize);
-		Send();
-		char fileBuffer[maxBufferSize];
-		while (file.good()) {
-			file.read(buffer, sizeof(buffer));
-			send(clientSocket, buffer, sizeof(buffer), 0);
-		}
-		file.close();
-		sent = true;
-	}
-	else if (query == 17) {
+	if (query == 17) {
 		int shutdownStatus = ShutdownSystem();
-		if (shutdownStatus == 0) {
-			result = "Y";
-		} 
-		else {
-			result = "N";
-		}
+		result = shutdownStatus == 0 ? "Y" : "N";
 	}
 	else if (query == 18) {
 		int resetStatus = ResetSystem();
-		if (resetStatus == 0) {
-			result = "Y";
+		result = resetStatus == 0 ? "Y" : "N";
+	}
+	else if (query == 20) {
+		int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+		index = 0;
+		string filePath = "";
+		cout << filePath << endl;
+		while (buffer[index] != '\0') {
+			filePath += buffer[index];
+			index++;
+		}
+		fstream file(filePath, ios::binary | ios::in);
+		if (!file.is_open()) {
+			result = "N"; //File not found
 		}
 		else {
-			result = "N";
+			file.seekg(0, ios::end);
+			size_t fileSize = file.tellg();
+			file.seekg(0, ios::beg);
+			result = "F" + to_string(fileSize);
+			Send();
+			char fileBuffer[maxBufferSize];
+			while (fileSize > 0 && fileSize >= maxBufferSize) {
+				file.read(buffer, maxBufferSize);
+				send(clientSocket, buffer, maxBufferSize, 0);
+				fileSize -= maxBufferSize;
+			}
+			if (fileSize > 0) {
+				file.read(buffer, fileSize);
+				send(clientSocket, buffer, fileSize, 0);
+			}
+			file.close();
+			sent = true;
 		}
 	}
 	else if (query == 21) {
@@ -162,6 +165,9 @@ void ClientSocket::Receive() {
 		}
 		else if (buffer[0] == 'L') {
 			//List app,...
+		}
+		else { //result == "Y" or "N"
+			result = buffer[0];
 		}
 	}
 	else if (bytesReceived == 0) {
