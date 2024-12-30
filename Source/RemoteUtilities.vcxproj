@@ -146,6 +146,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Socket.cpp" />
     <ClCompile Include="WindowAPI.cpp" />
+    <ClCompile Include="Header.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Account.h" />

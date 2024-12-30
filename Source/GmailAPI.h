@@ -146,6 +146,7 @@ struct ConfirmationCurl {
 		curl_easy_setopt(sender, CURLOPT_READFUNCTION, payload_source_confirmation);
 		curl_easy_setopt(sender, CURLOPT_READDATA, &upload_ctx);
 		curl_easy_setopt(sender, CURLOPT_UPLOAD, 1L);
+		upload_ctx = { 0 };
 	}
 	void Send(string& email, string& content) {
 		InitSender(email);
@@ -169,6 +170,7 @@ struct ConfirmationCurl {
 			curl_easy_cleanup(sender);
 			sender = nullptr;
 		}
+		upload_ctx = { 0 };
 	}
 };
 

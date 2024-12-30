@@ -18,16 +18,20 @@
 #include <sstream>
 #include <regex>
 #include <dshow.h>
+#include <filesystem>
 #include <thread> 
 #include <chrono>
 #include <conio.h>
 #include <atlimage.h>
-#include <windows.h>
 #include <iostream>
 #include <unordered_set>
 #include <algorithm>
-using namespace std;
+#include <Windows.h>
 
+using namespace std;
+extern string ComPath;
+extern string UIPath;
+extern string SystemPath;
 #pragma comment(lib, "strmiids.lib")
 #include "WindowAPI.h"
 #include "Socket.h"

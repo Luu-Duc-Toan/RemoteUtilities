@@ -1,6 +1,50 @@
 ﻿#include "WindowAPI.h"
 
 
+vector<string> ListInstalledApplications() {
+	std::vector<std::string> apps;
+
+	// Gọi WMIC qua pipe để lấy danh sách ứng dụng
+	FILE* pipe = _popen("wmic product get name", "r");
+	if (!pipe) {
+		std::cerr << "Loi: Khong the truy xuat danh sach ung dung. Hay kiem tra WMIC tren he thong.\n";
+		return apps;
+	}
+	char buffer[512];
+	bool firstLine = true;
+	while (fgets(buffer, sizeof(buffer), pipe)) {
+		std::string line(buffer);
+		if (firstLine) {
+			firstLine = false;
+			continue;
+		}
+		line.erase(line.find_last_not_of(" \n\r\t") + 1);
+		if (!line.empty()) {
+			apps.push_back(line);
+		}
+	}
+	_pclose(pipe);
+	return apps;
+}
+int StartApp(string &commandSentence) {
+	auto ensureExeExtension = [](const std::string& command) -> std::string {
+		if (command.size() > 4 && command.substr(command.size() - 4) == ".exe") {
+			return command;
+		}
+		return command + ".exe";
+		};
+	commandSentence = ensureExeExtension(commandSentence);
+	std::string fullCommand = "start \"\" \"" + commandSentence + "\"";
+	const char* commandPtr = fullCommand.c_str();
+	int result = system(commandPtr);
+	if (result == 0) {
+		std::cout << "Start an application successful\n";
+	}
+	else {
+		std::cerr << "Start an application failed\n";
+	}
+	return result;
+}
 int ShutdownSystem() {
 	int result = system("shutdown /s /t 30");
 	return result;

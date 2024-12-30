@@ -1,4 +1,5 @@
 ﻿#include "Header.h"
+
 #define COMMENT
 
 bool isAppOn = true;
@@ -9,6 +10,9 @@ WSADATA wsaData;
 ClientSocket client;
 ServerSocket server;
 ConfirmationCurl confirmationCurl;
+
+filesystem::file_time_type modifiedTime;
+
 void GetRole();
 void ClientRun(Role& role);
 void ServerRun(Role& role);
@@ -24,7 +28,7 @@ void ClientRun(Role& role) {
 			myCurl.emailQueue.pop();
 			if (myCurl.ShouldSendToServer()) {
 				client.Send(myCurl.query.c_str());
-				if (myCurl.query == "20" || myCurl.query == "21") {
+				if (myCurl.query ==  "12" || myCurl.query == "20" || myCurl.query == "21") {
 					client.Send(myCurl.subContent.c_str());
 				}
 				client.Receive();
@@ -63,12 +67,32 @@ void Client_ServerRun() {
 	serverThread.join();
 	return GetRole();
 }
+
 void AdminRun() {
 	myCurl.isAutoReceiving = true;
+	int query = -1;
+	vector<string> selectedClient;
+	string UIContent = "";
 	while (true) {
-		int query = -1;
-		cout << "Query: ";
-		cin >> query;
+		query = -1;
+		if (filesystem::last_write_time(UIPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(UIPath);
+			cout << "Query: ";
+			string queryStr, selectedSize;
+			fstream f(UIPath, ios::in);
+			getline(f, queryStr, ';');
+			query = stoi(queryStr);
+			getline(f, selectedSize, ';');
+			int n = stoi(selectedSize);
+			string clientID;
+			for (int i = 0; i < n; i++) {
+				getline(f, clientID, ';');
+				selectedClient.push_back(clientID);
+			}
+			getline(f, UIContent, ';');
+			f.close();
+		}
 		if (query == -1) continue;
 		else if (query == 1) { //for 1 - 10: dont need to send email: change password, email
 			string password, newPassword;
@@ -82,7 +106,7 @@ void AdminRun() {
 			account.SetPassword(newPassword);
 			loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
 		}
-		else if (query == 2) {
+		else if (query == 2) { //Change email
 			string email, newEmail;
 			while (true)
 			{
@@ -117,7 +141,7 @@ void AdminRun() {
 			account.SetEmail(newEmail);
 			loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
 		}
-		else if (query == 3) { //Cho xac nhan?
+		else if (query == 3) { //Add clientID
 			string newClientID;
 			while (true) {
 				cout << "New clientID: "; cin >> newClientID;
@@ -194,7 +218,7 @@ void AdminRun() {
 				}
 			}
 		}
-		else if (query == 4) {
+		else if (query == 4) { //Remove clientID
 			string removeClientID;
 			cout << "Remove clientID: ";
 			while (true) {
@@ -208,67 +232,163 @@ void AdminRun() {
 				}
 			}
 		}
-		else if (query == 5) {
+		else if (query == 5) { //Log out
 			myCurl.isAutoReceiving = false;
 			account.Reset();
 			break;
 		}
+		else if (query == 6) { //Select client
+
+		}
+		//6,7
 		else if (query > 10) { //for 11 - ...
 			//if query need to send email: listApp, add clientID, remove clientID,...
-			myCurl.result = "";
-			if (query == 20 || query == 21) {
-				cout << "Nhap duong dan file: ";
-				string filePath;
-				cin >> myCurl.result;
-			}
+			myCurl.result = UIContent;
 			string content = account.adminID + ";" + to_string(query) + ";" + myCurl.result + ";";
 			//Choose clientID
-			myCurl.SendEmail(account.clientList, content);
-			myCurl.AdminProcess(account.clientList, query);
+			myCurl.SendEmail(selectedClient, content);
+			myCurl.AdminProcess(selectedClient, query);
+			fstream file(SystemPath, ios::out);
+			file << to_string(query) + ";Y;";
 		}
 	}
 	return GetRole();
 }
+void Login() {
+	auto NewModifiedTime = filesystem::last_write_time(UIPath);
+	while (true) {
+		auto NewModifiedTime = filesystem::last_write_time(UIPath);
+		if (NewModifiedTime == modifiedTime) {
+			modifiedTime = NewModifiedTime;
+			continue;
+		}
+		this_thread::sleep_for(std::chrono::duration<double>(0.1));
+		string mode, user, password;
+		fstream f(UIPath, ios::in);
+		getline(f, mode, ';');
+		if (mode == "1") { //Back
+			cout << "Back!" << endl;
+			f.close();
+			return GetRole();
+		}
+		else if (mode == "3") { //Sign up
+			f.close();
+			modifiedTime = filesystem::last_write_time(UIPath);
+			while (true) {
+				NewModifiedTime = filesystem::last_write_time(UIPath);
+				if (NewModifiedTime != modifiedTime) {
+					this_thread::sleep_for(std::chrono::duration<double>(0.1));
+					modifiedTime = filesystem::last_write_time(UIPath);
+					f.open(UIPath, ios::in);
+					string mode;
+					getline(f, mode, ';');
+					if (mode == "1") {
+						cout << "Back!" << endl;
+						f.close();
+						return Login();
+					}
+					string user, password, email;
+					getline(f, user, ';');
+					getline(f, password, ';');
+					getline(f, email, ';');
+					f.close();
+					if (loginSystem.isAccountExist(user)) {
+						f.open(SystemPath, ios::out);
+						f << "N;Account already exist!;";
+						f.close();
+						cout << "Account already exist!" << endl;
+						continue;
+					}
+					email += "@gmail.com";
+					int code = rand() % 1000000;
+					string content = "Validation code: " + to_string(code);
+					cout << "Code: " << code << endl;
+					confirmationCurl.Send(email, content);
+					f.open(SystemPath, ios::out);
+					f << "Y;" + to_string(code) + ';';
+					f.close();
+					while (true) {
+						NewModifiedTime = filesystem::last_write_time(UIPath);
+						if (NewModifiedTime != modifiedTime) {
+							this_thread::sleep_for(std::chrono::duration<double>(0.1));
+							modifiedTime = filesystem::last_write_time(UIPath);
+							fstream f(UIPath, ios::in);
+							string result;
+							getline(f, result, ';');
+							f.close();
+							if (result == "Y") {
+								loginSystem.InsertAccount(user, password, email);
+								cout << "Sign up successfully!" << endl;
+								return Login();
+							}
+							else {
+								cout << "Sign up failed!" << endl;
+							}
+						}
+					}
+				}
+			}
+		}
+		else {
+			getline(f, user, ';');
+			getline(f, password, ';');
+			f.close();
+			if (loginSystem.SearchAccount(user, password, account)) {
+				string res = "Y;";
+				res += to_string(account.clientList.size()) + ";";
+				for (string &clientID : account.clientList) {
+					res += clientID + ";";
+				}
+				f.open(SystemPath, ios::out);
+				f << res;
+				f.close();
+				account.SetRole(Role::ADMIN);
+				myCurl.UpdateSearchQuery(account.adminID);
+				modifiedTime = filesystem::last_write_time(UIPath);
+				return AdminRun();
+			}
+			else {
+				f.open(SystemPath, ios::out);
+				f << "N;Wrong password;";
+				modifiedTime = filesystem::last_write_time(UIPath);
+			}
+		}
+	}
+}
 void GetRole() {
 	myCurl.isAutoReceiving = false;
-	int roleIndex = -1;
 	cout << "0: CLIENT_SERVER, 1: ADMIN" << endl;
-	cout << "Role: ";
-	cin >> roleIndex;
-	if (roleIndex == 0) {
-		account.SetRole(Role::CLIENT_SERVER);
-		myCurl.UpdateSearchQuery(account.clientID);
-		Client_ServerRun();
-	}
-	else if (roleIndex == 1) {
-		account.SetRole(Role::ADMIN);
-		//Login
-		string userLogin = "";
-		string passwordLogin = "";
-		while (true) {
-			cout << "User: "; cin >> userLogin;
-			cout << "Password: ";  cin >> passwordLogin;
-			if (loginSystem.SearchAccount(userLogin, passwordLogin, account)) {
-				myCurl.UpdateSearchQuery(account.adminID);
+	modifiedTime = filesystem::last_write_time(UIPath);
+	while (true) {
+		if (filesystem::last_write_time(UIPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(UIPath);
+			cout << modifiedTime << endl;
+			fstream f(UIPath, ios::in);
+			string userInput;
+			getline(f, userInput, ';');
+			f.close();
+			if (userInput == "1") { //Client - Server
+				account.SetRole(Role::CLIENT_SERVER);
+				myCurl.UpdateSearchQuery(account.clientID);
+				Client_ServerRun();
+				cout << "Client - Server!" << endl;
+			}
+			else if (userInput == "2") { //Admin
+				cout << "Admin!" << endl;
+				return Login();
+			}
+			else {
 				break;
 			}
 		}
-		AdminRun();
 	}
-	else return; //close app;
 }
 
 
 int main() {
 	srand((unsigned)time(0));
 	InitWinsock(wsaData);
-
-	//loginSystem.InsertAccount("user", "password", "gmail");
-	//loginSystem.UpdateAccount("user", "password", "gmail", {"C1", "C2"});
-	//loginSystem.SearchAccount("user", "password");
-	//loginSystem.DeleteAccount("user");
-	//cout << loginSystem.GetClientID();
-
 	//First time using
 	if (account.clientID.empty()) {
 		int clientID = loginSystem.GetMaxClientID();
@@ -276,48 +396,24 @@ int main() {
 		account.SetClientID("C" + to_string(clientID));
 		cout << "Your clientID: " << account.clientID << endl;
 	}
+	//UIPath
+	ComPath = filesystem::current_path().string();
+	for (char& c : ComPath) {
+		c = (c == '\\') ? '/' : c;
+	}
+	while (ComPath.back() != '/') {
+		ComPath.pop_back();
+	}
+	ComPath += "Common/";
+	UIPath = ComPath + "UI.txt";
+	SystemPath = ComPath + "System.txt";
+	modifiedTime = filesystem::last_write_time(UIPath);
+	fstream f(SystemPath, ios::out);
+	f << "Y;";
+	f.close();
+	//Main loop
 	GetRole();
 	isAppOn = false;
 	CloseWinsock();
 }
 
-#ifndef COMMENT
-WSADATA wsaData;
-
-int main() {
-	InitWinsock(wsaData);
-
-	ServerSocket server;
-	server.Listen();
-	const char* welcomeMessage = "Hello, Client!";
-	while (true) {
-		server.Receive();
-		char input = 'o';
-		cin >> input;
-		cout << input;
-		if (input == ' ') break;
-		if (input == 's') {
-			server.Send(welcomeMessage);
-		}
-	}
-
-	CloseWinsock();
-}
-#endif 
-
-#ifndef COMMENT
-//int main() {
-//	string content = "Hello, this is a test email!";
-//	vector<string> clientIDs = { "C1", "C2" };
-//	string id = "A1";
-//	MyCurl myCurl;
-//	myCurl.UpdateSearchQuery(id);
-//	for (auto& id : clientIDs) {
-//		myCurl.AddClientId(id);
-//	}
-//	myCurl.SendEmail(content);
-//	while (true) {
-//		myCurl.ReadEmail();
-//	}
-//}
-#endif

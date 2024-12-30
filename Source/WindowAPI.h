@@ -3,7 +3,8 @@
 #define WINDOWAPI_H
 #include "Header.h"
 
-
+vector<string> ListInstalledApplications();
+int StartApp(string &commandSentence);
 int ShutdownSystem();
 int ResetSystem();
 string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed);

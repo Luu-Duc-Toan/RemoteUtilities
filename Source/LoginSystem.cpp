@@ -55,6 +55,23 @@ void LoginSystem::ConnectDatabase() {
 		cerr << "Error Code: " << e.getErrorCode() << endl;
 	}
 }
+bool LoginSystem::isAccountExist(const string user) {
+	// Prepare the SELECT statement with a WHERE clause
+	sql::PreparedStatement* pstmt = con->prepareStatement(
+		"SELECT * FROM users WHERE user = ?"
+	);
+	// Bind the user parameter and execute the statement
+	pstmt->setString(1, user.c_str());
+	// Execute the query and get the results
+	sql::ResultSet* res = pstmt->executeQuery();
+	if (!res->next()) {
+		cout << "Invalid account" << endl;
+		return false;
+	}
+	delete pstmt;
+	delete res;
+	return true;
+}
 bool LoginSystem::SearchAccount(const string user, const string password, Account &account) {
 	// Prepare the SELECT statement with a WHERE clause
 	sql::PreparedStatement* pstmt = con->prepareStatement(
@@ -73,6 +90,7 @@ bool LoginSystem::SearchAccount(const string user, const string password, Accoun
 	string passwordTmp = res->getString("password");
 	string emailTmp = res->getString("email");
 	vector<string> clientListTmp = ConvertClientList(res->getString("clientList"));
+	if (clientListTmp.back().empty()) clientListTmp.pop_back(); 
 	delete pstmt;
 	delete res;
 	if (password == passwordTmp)

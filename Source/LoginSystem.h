@@ -16,6 +16,7 @@ struct LoginSystem {
     sql::mysql::MySQL_Driver* driver = nullptr;
     sql::Connection* con = nullptr;
 	void ConnectDatabase();
+	bool isAccountExist(const string user);
 	bool SearchAccount(const string user, const string password, Account& account);
 	void InsertAccount(const string user, const string password, const string email);
 	void DeleteAccount(const string user);

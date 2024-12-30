@@ -26,7 +26,54 @@ void ServerSocket::ProcessClientMessage() {
 		query = query * 10 + buffer[index] - '0';
 		index++;
 	}
-	if (query == 17) {
+	if (query == 11)
+	{
+		vector <string> apps = ListInstalledApplications();
+		string filePath = "_Data/ClientList/ListApp";
+		fstream file(filePath, ios::out);
+		if (!file.is_open())
+		{
+			cout << "Khong the mo file de ghi";
+		}
+		else
+		{
+			for (const auto& line : apps) {
+				file << line << "\n";
+			}
+		}
+		file.close();
+		file.open(filePath, ios::binary | ios::in);
+		if (!file.is_open()) {
+			result = "N"; //File not found
+		}
+		else {
+			file.seekg(0, ios::end);
+			size_t fileSize = file.tellg();
+			file.seekg(0, ios::beg);
+			result = "F" + to_string(fileSize);
+			Send();
+			char fileBuffer[maxBufferSize];
+			while (fileSize > 0 && fileSize >= maxBufferSize) {
+				file.read(buffer, maxBufferSize);
+				send(clientSocket, buffer, maxBufferSize, 0);
+				fileSize -= maxBufferSize;
+			}
+			if (fileSize > 0) {
+				file.read(buffer, fileSize);
+				send(clientSocket, buffer, fileSize, 0);
+			}
+			file.close();
+			sent = true;
+		}
+	}
+	else if (query == 12)
+	{
+		Receive();
+		string command = string(buffer);
+		int startapp = StartApp(command);
+		result = startapp == 0 ? "y" : "N";
+	}
+	else if (query == 17) {
 		int shutdownStatus = ShutdownSystem();
 		result = shutdownStatus == 0 ? "Y" : "N";
 	}
