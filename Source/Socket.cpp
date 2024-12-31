@@ -69,8 +69,13 @@ void ServerSocket::ProcessClientMessage() {
 	else if (query == 12)
 	{
 		Receive();
-		string command = string(buffer);
-		result = StartApp(command) ? "Y" : "N";
+		string appPath = string(buffer);
+		result = StartApp(appPath) ? "Y" : "N";
+	}
+	else if (query == 13) {
+		Receive();
+		string appPath = string(buffer);
+		result = StartApp(appPath) ? "Y" : "N";
 	}
 	else if (query == 17) {
 		result = ShutdownSystem() == 0 ? "Y" : "N";

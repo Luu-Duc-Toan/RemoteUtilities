@@ -43,7 +43,7 @@ bool isGettingFilePath = false;
 string CopyOrDelete = "";
 string filePath = "";
 bool hasFailQuery = false;
-bool isShowSuccesNotification = false;
+bool isShowSuccessNotification = false;
 int successNotificationQuery = 0;
 bool isGettingAppName = false;
 string StartOrStop = "";
@@ -1006,7 +1006,7 @@ void DrawSuccessNotification() {
 	if (CheckCollisionPointRec(mousePosition, backButton)) {
 		DrawRectangleRec(backButton, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			isShowSuccesNotification = false;
+			isShowSuccessNotification = false;
 		}
 	}
 	//Box
@@ -1177,7 +1177,7 @@ void DrawWaitingNewClientIDAcceptWindow() {
 		getline(f, res, ';');
 		if (res == "Y") {
 			successNotificationQuery = 3;
-			isShowSuccesNotification = true;
+			isShowSuccessNotification = true;
 			DrawSuccessNotification();
 		}
 		else {
@@ -1280,7 +1280,7 @@ void DrawAdminWindow() {
 				}
 				else {
 					successNotificationQuery = stoi(query);
-					isShowSuccesNotification = true;
+					isShowSuccessNotification = true;
 				}
 			}
 			else if (query == "3") {
@@ -1327,7 +1327,7 @@ void DrawAdminWindow() {
 			getline(f, y, ';');
 			if (y == "Y") {
 				successNotificationQuery = stoi(query);
-				isShowSuccesNotification = true;
+				isShowSuccessNotification = true;
 			}
 			else if (y == "N") {
 				string size;
@@ -1345,7 +1345,7 @@ void DrawAdminWindow() {
 			isWaiting = false;
 		}
 	}
-	if (isGettingFilePath || isShowSuccesNotification || isGettingAppName || isGettingClientID || isWaitingNewClientIDAccept
+	if (isGettingFilePath || isShowSuccessNotification || isGettingAppName || isGettingClientID || isWaitingNewClientIDAccept
 		|| isShowFailNotification || isGettingNewPassword) {
 		mousePosition = { -1, -1 };
 	}
@@ -1523,7 +1523,7 @@ void DrawAdminWindow() {
 	else if (isGettingFilePath) {
 		DrawGetFilePathWindow();
 	}
-	else if (isShowSuccesNotification) {
+	else if (isShowSuccessNotification) {
 		DrawSuccessNotification();
 	}
 	else if (isShowFailNotification) {
@@ -1628,23 +1628,30 @@ void DrawListAppWindow() { //Change variable to list service
 			fstream f(SystemPath, ios::in);
 			string query;
 			getline(f, query, ';');
-			if (query == "12") {
-
-			}
 			string y;
 			getline(f, y, ';');
 			if (y == "Y") {
-
+				isShowSuccessNotification = true;
+				successNotificationQuery = stoi(query);
 			}
 			else {
 				string size;
 				getline(f, size, ';');
 				int n = stoi(size);
 				string clientID;
+				failNoti = "Execution failed for client IDs:";
+				for (int i = 0; i < n; i++) {
+					getline(f, clientID, ';');
+					failNoti += " " + clientID;
+				}
+				isShowFailNotification = true;
 			}
 			f.close();
 			isWaiting = false;
 		}
+	}
+	if (isShowFailNotification || isShowSuccessNotification) {
+		mousePosition = { -1, -1 };
 	}
 	//Back button
 	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
@@ -1697,7 +1704,14 @@ void DrawListAppWindow() { //Change variable to list service
 		if (CheckCollisionPointRec(mousePosition, stopBox)) {
 			DrawRectangleRec(stopBox, GRAY);
 			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-				//Mouse on app
+				userInput = "13;" + to_string(clientSelectedCount) + ';';
+				for (int i = 0; i < clientList.size(); i++) {
+					if (!clientSelected[i]) continue;
+					userInput += clientList[i] + ";";
+				}
+				userInput += apps[i].second + ";";
+				isUserInputChanged = true;
+				isWaiting = true;
 			}
 		}
 	}
@@ -1731,4 +1745,10 @@ void DrawListAppWindow() { //Change variable to list service
 	}
 	//Draw waiting animation
 	if (isWaiting) DrawWaitingAnimation();
+	else if (isShowFailNotification) {
+		DrawFailNotification();
+	}
+	else if (isShowSuccessNotification) {
+		DrawSuccessNotification();
+	}
 }
