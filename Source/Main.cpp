@@ -403,11 +403,12 @@ void AdminRun() {
 		//6,7
 		else if (query > 10) { //for 11 - ...
 			//if query need to send email: listApp, add clientID, remove clientID,...
+			vector<string> failedClientIDs;
 			myCurl.result = UIContent;
 			string content = account.adminID + ";" + to_string(query) + ";" + myCurl.result + ";";
 			//Choose clientID
 			myCurl.SendEmail(selectedClient, content);
-			myCurl.AdminProcess(selectedClient, query);
+			myCurl.AdminProcess(selectedClient, query, failedClientIDs);
 			fstream file(SystemPath, ios::out);
 			file << to_string(query) + ";Y;";
 			file.close();

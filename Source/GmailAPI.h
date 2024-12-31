@@ -116,7 +116,7 @@ struct MyCurl {
 	void Preprocess();
 	void ClientProcess();
 	bool ShouldSendToServer();
-	void AdminProcess(const vector<string> IDs, const int query);
+	void AdminProcess(const vector<string> IDs, const int query, vector<string> &failedClientIDs);
 	void ReadEmail(bool& isAppOn);
 	void ConfirmEmail(string& recipent, string &content);
 	MyCurl(bool& isAppOn);

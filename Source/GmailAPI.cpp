@@ -227,7 +227,7 @@ void MyCurl::ClientProcess() { //Change the result
 		}
 	}
 }
-void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
+void MyCurl::AdminProcess(const vector<string> IDs, const int query, vector<string> &failedClientIDs) {
 	unordered_set<string> IDSet;
 	for (auto& ID : IDs) {
 		IDSet.insert(ID);
@@ -258,6 +258,9 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
 						file << subContent;
 						file.close();
 						cout << "Saved copy file of " + receiverID + " at " + ComPath + "Copy/" + fileName + receiverID << endl;
+					}
+					if (subContent == "N") {
+						failedClientIDs.push_back(receiverID);
 					}
 					IDSet.erase(receiverID);
 				}
