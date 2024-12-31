@@ -101,6 +101,45 @@ bool StartApp(const std::string& appPath) {
 		return false;
 	}
 }
+bool stopApplicationByPath(const std::string& appPath) {
+	std::wstring wAppPath = stringToWString(appPath);
+	HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	if (hProcessSnap == INVALID_HANDLE_VALUE) {
+		std::cerr << "Unable to take process snapshot!" << std::endl;
+		return false;
+	}
+
+	PROCESSENTRY32 pe32;
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+
+	if (Process32First(hProcessSnap, &pe32)) {
+		do {
+			HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
+			if (hProcess != nullptr) {
+				wchar_t exePath[MAX_PATH] = { 0 };
+				if (GetModuleFileNameExW(hProcess, nullptr, exePath, MAX_PATH)) {
+					std::wstring exePathW(exePath);
+					if (exePathW == wAppPath) {
+						if (TerminateProcess(hProcess, 0)) {
+							std::cout << "Successfully terminated: " << appPath << std::endl;
+						}
+						else {
+							std::cerr << "Failed to terminate process: " << appPath << std::endl;
+						}
+						CloseHandle(hProcess);
+						break;
+					}
+				}
+				CloseHandle(hProcess);
+			}
+		} while (Process32Next(hProcessSnap, &pe32));
+	}
+	else {
+		std::cerr << "Unable to enumerate processes!" << std::endl;
+	}
+	CloseHandle(hProcessSnap);
+	return true;
+}																																											
 int ShutdownSystem() {
 	int result = system("shutdown /s /t 20");
 	return result;
@@ -203,7 +242,7 @@ bool DeleteFile(const string& filepath) {
 	}
 }
 void Webcam(bool& isWebcamOn, bool& isServerOn) {
-	WebcamController webcam;
+	WebcamController webcam;																																																										
 	MSG msg;
 	bool isWebcamRunning = false;
 	while (isServerOn) {

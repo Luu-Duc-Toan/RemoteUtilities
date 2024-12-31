@@ -32,6 +32,9 @@
 #include <algorithm>
 #include <Windows.h>
 #include <shellapi.h>
+#include <psapi.h>
+#include <tlhelp32.h>
+
 
 using namespace std;
 extern string ComPath;
@@ -42,6 +45,7 @@ extern filesystem::file_time_type modifiedTime;
 #pragma comment(lib, "strmiids.lib")
 #pragma comment(lib, "Shlwapi.lib") 
 #pragma comment(lib, "Shell32.lib")
+#pragma comment(lib, "Psapi.lib")
 
 #include "WindowAPI.h"
 #include "Socket.h"
