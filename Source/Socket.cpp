@@ -38,7 +38,7 @@ void ServerSocket::ProcessClientMessage() {
 		else
 		{
 			for (const auto& line : apps) {
-				file << line.first << ';' << line.second << "\n";
+				file << line.first << ';' << line.second << ';';
 			}
 		}
 		file.close();

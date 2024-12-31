@@ -115,7 +115,7 @@ void LoadListApp() {
 		string appName, appPath;
 		while (!file.eof()) {
 			getline(file, appName, ';');
-			getline(file, appPath);
+			getline(file, appPath, ';');
 			if (appName.empty() || appPath.empty()) continue;
 			listApp[appName].second++;
 			listApp[appName].first = appPath;
