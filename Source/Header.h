@@ -13,6 +13,10 @@
 #include <unordered_map>
 #include <bitset>
 #include <fstream>
+#include <shlobj.h>
+#include <shlwapi.h>
+#include <io.h>
+#include <fcntl.h>
 #include <queue>
 #include <stack>
 #include <sstream>
@@ -27,13 +31,18 @@
 #include <unordered_set>
 #include <algorithm>
 #include <Windows.h>
+#include <shellapi.h>
 
 using namespace std;
 extern string ComPath;
 extern string UIPath;
 extern string SystemPath;
+extern filesystem::file_time_type modifiedTime;
 
 #pragma comment(lib, "strmiids.lib")
+#pragma comment(lib, "Shlwapi.lib") 
+#pragma comment(lib, "Shell32.lib")
+
 #include "WindowAPI.h"
 #include "Socket.h"
 #include "Account.h"

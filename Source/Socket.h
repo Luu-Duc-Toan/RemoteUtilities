@@ -80,7 +80,6 @@ struct ServerSocket {
 		cout << "Client connected!" << endl;
 	}
 	void Shutdown() {
-		//dont connect yet
 		if (shutdown(clientSocket, SD_SEND) == SOCKET_ERROR) {
 			printf("shutdown failed with error: %d\n", WSAGetLastError());
 			closesocket(clientSocket);

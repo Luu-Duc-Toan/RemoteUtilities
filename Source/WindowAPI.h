@@ -3,8 +3,18 @@
 #define WINDOWAPI_H
 #include "Header.h"
 
-vector<string> ListInstalledApplications();
-int StartApp(string &commandSentence);
+// Convert std::string to std::wstring
+std::wstring stringToWString(const std::string& str);
+// Convert std::wstring to std::string
+std::string wstringToString(const std::wstring& wstr);
+// Get target path from a shortcut (.lnk)
+std::string getShortcutTarget(const std::string& shortcutPath);
+// Find shortcut files in a directory
+std::vector<std::pair<std::string, std::string>> findShortcutsInDirectory(const std::string& directory);
+// List all applications from Desktop and Start Menu
+std::vector<std::pair<std::string, std::string>> ListAllApplications();
+// Launch an application
+bool StartApp(const std::string& appPath);
 int ShutdownSystem();
 int ResetSystem();
 string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed);

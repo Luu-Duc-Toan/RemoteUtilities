@@ -42,7 +42,7 @@ extern int maxClientInRow;
 extern int clientPage;
 extern int maxClientPage;
 ////////////////////////////////////////////////////////////////////////// LIST APP
-extern vector<string> apps;
+extern vector<pair<string,string>> apps;
 extern int maxAppInPage;
 extern int appPage; 
 extern int maxAppPage;

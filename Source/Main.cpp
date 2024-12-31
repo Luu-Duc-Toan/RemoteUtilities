@@ -11,7 +11,6 @@ ClientSocket client;
 ServerSocket server;
 ConfirmationCurl confirmationCurl;
 
-filesystem::file_time_type modifiedTime;
 
 void GetRole();
 void ClientRun(Role& role);
@@ -26,6 +25,10 @@ void ClientRun(Role& role) {
 	while (role == Role::CLIENT_SERVER) {
 		if (!myCurl.emailQueue.empty()) {
 			myCurl.Preprocess();
+			fstream f(SystemPath, ios::out);
+			if(myCurl.query == "3") f << myCurl.query + ";" + myCurl.receiverID + ';';
+			else f << myCurl.query + ";";
+			f.close();
 			myCurl.emailQueue.pop();
 			if (myCurl.ShouldSendToServer()) {
 				client.Send(myCurl.query.c_str());
@@ -38,6 +41,9 @@ void ClientRun(Role& role) {
 			string content = account.clientID + ";" + myCurl.query + ";" + myCurl.result + client.result + ";";
 			cout << "Send email to " << myCurl.receiverID << endl;
 			myCurl.SendEmail({ myCurl.receiverID }, content);
+			f.open(SystemPath, ios::out);
+			f << myCurl.query + "Y;";
+			f.close();
 		}
 	}
 }
@@ -410,7 +416,15 @@ void AdminRun() {
 			myCurl.SendEmail(selectedClient, content);
 			myCurl.AdminProcess(selectedClient, query, failedClientIDs);
 			fstream file(SystemPath, ios::out);
-			file << to_string(query) + ";Y;";
+			if (failedClientIDs.size() != 0) {
+				string res = to_string(query) + ";N;" + to_string(failedClientIDs.size()) +';';
+				for (string failedClientID : failedClientIDs) {
+					res += failedClientID + ';';
+				}
+				file << res;
+			}
+			else 
+				file << to_string(query) + ";Y;";
 			file.close();
 		}
 	}

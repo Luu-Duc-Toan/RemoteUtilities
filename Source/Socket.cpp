@@ -28,7 +28,7 @@ void ServerSocket::ProcessClientMessage() {
 	}
 	if (query == 11)
 	{
-		vector <string> apps = ListInstalledApplications();
+		vector <pair<string, string>> apps = ListAllApplications();
 		string filePath = "_Data/ClientList/ListApp";
 		fstream file(filePath, ios::out);
 		if (!file.is_open())
@@ -38,7 +38,7 @@ void ServerSocket::ProcessClientMessage() {
 		else
 		{
 			for (const auto& line : apps) {
-				file << line << "\n";
+				file << line.first << ';' << line.second << "\n";
 			}
 		}
 		file.close();
@@ -70,16 +70,13 @@ void ServerSocket::ProcessClientMessage() {
 	{
 		Receive();
 		string command = string(buffer);
-		int startapp = StartApp(command);
-		result = startapp == 0 ? "y" : "N";
+		result = StartApp(command) ? "Y" : "N";
 	}
 	else if (query == 17) {
-		int shutdownStatus = ShutdownSystem();
-		result = shutdownStatus == 0 ? "Y" : "N";
+		result = ShutdownSystem() == 0 ? "Y" : "N";
 	}
 	else if (query == 18) {
-		int resetStatus = ResetSystem();
-		result = resetStatus == 0 ? "Y" : "N";
+		result = ResetSystem() == 0 ? "Y" : "N";
 	}
 	else if (query == 20) {
 		Receive();
@@ -122,7 +119,7 @@ void ServerSocket::ProcessClientMessage() {
 	}
 	else if (query == 22) {
 		if (CaptureScreen()) {
-			fstream file("_Data/screenshot.jpg", ios::binary | ios::in);
+			fstream file(ComPath + "Screenshot/screenshot.jpg", ios::binary | ios::in);
 			file.seekg(0, ios::end);
 			size_t fileSize = file.tellg();
 			file.seekg(0, ios::beg);

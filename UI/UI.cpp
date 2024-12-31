@@ -26,6 +26,10 @@ bool isTypingGmail = false;
 ////////////////////////////////////////////////////////////////////////// Code
 string code = "";
 string codeInput = "";
+////////////////////////////////////////////////////////////////////////// CLIENT
+string clientQuery = "";
+string yourClientID = "";
+string receiverID = "";
 ////////////////////////////////////////////////////////////////////////// ADMIN
 bool showUserBox = false;
 vector<string> adminMainQueryNames = { "Apps", "Processes", "Start", "Stop", "Shutdown", "Reset", "Copy", "Delete", "Screenshot", "KeyloggerON", "KeyloggerOFF","WebcamON","WebcamOFF" };
@@ -33,7 +37,7 @@ vector<string> userQueryNames = { "Change Password", "Log Out" };
 vector<string> userQueryNumbers = { "1", "5" };
 vector<string> clientList = { "C35", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C123", "C1234", "C231", "C23", "C12321412" };
 vector<bool> clientSelected(clientList.size(), true);
-vector<string> adminMainQueryNumbers = { "11", "14", "12", "13", "17", "18", "20", "21", "22", "23", "24", "25", "27" };
+vector<string> adminMainQueryNumbers = { "11", "14", "12", "13", "17", "18", "20", "21", "22", "23", "24", "26", "27" };
 int clientSelectedCount = clientList.size();
 bool isGettingFilePath = false;
 string CopyOrDelete = "";
@@ -58,8 +62,8 @@ vector<string> failClientList = {};
 ////////////////////////////////////////////////////////////////////////// FORGOT PASSWORD
 bool isTypingConfirmPassword = false;
 string confirmPassword = "";
-////////////////////////////////////////////////////////////////////////// 
-vector<string> apps = { "App1", "App2", "App3", "App4", "App5", "App6", "App7", "App8", "App9", "App10", "App11", "App12", "App13", "App14", "App15", "App16", "App17", "App18", "App19", "App20" };
+////////////////////////////////////////////////////////////////////////// LIST APP
+vector<pair<string, string>> apps = {};
 int maxAppInPage = 10;
 int appPage = 1;
 int maxAppPage = (apps.size() + maxAppInPage - 1) / maxAppInPage;
@@ -74,8 +78,8 @@ vector<int> currentFrames = { 0, 0, 0 };
 vector<float> frameWidths = { 300, 400, 300 };
 vector<float> frameHeights = { 300, 400, 300 };
 vector<float> timers = { 0.0f, 0.0f, 0.0f };
-vector<Rectangle> sourceRects = { {0.0f, 0.0f, frameWidths[0], frameHeights[0]}, {0.0f, 0.0f, frameWidths[1], frameHeights[1]}, 
-	{0.0f, 0.0f, frameWidths[2], frameHeights[2]}};
+vector<Rectangle> sourceRects = { {0.0f, 0.0f, frameWidths[0], frameHeights[0]}, {0.0f, 0.0f, frameWidths[1], frameHeights[1]},
+	{0.0f, 0.0f, frameWidths[2], frameHeights[2]} };
 vector<Texture2D> animations;
 ///////////////////////////////////////////////////////////////////////////////////////////
 function<void()> Draw = DrawStartWindow;
@@ -104,24 +108,24 @@ void ResetLogin() {
 	isTypingUser = true;
 }
 void LoadListApp() {
-	unordered_map<string, int> listApp;
+	unordered_map<string, pair<string, int>> listApp;
 	for (int i = 0; i < clientList.size(); i++) {
 		if (!clientSelected[i]) continue;
-		cout << ComPath + "List/ListApp" + clientList[i];
 		fstream file(ComPath + "List/ListApp" + clientList[i], ios::binary | ios::in);
-		string app;
+		string appName, appPath;
 		while (!file.eof()) {
-			getline(file, app);
-			if (app.empty()) continue;
-			app.pop_back();
-			listApp[app]++;
+			getline(file, appName, ';');
+			getline(file, appPath);
+			if (appName.empty() || appPath.empty()) continue;
+			listApp[appName].second++;
+			listApp[appName].first = appPath;
 		}
 		file.close();
 	}
 	apps.clear();
 	for (auto& app : listApp) {
-		if (app.second != clientSelectedCount) continue;
-		apps.push_back(app.first);
+		if (app.second.second != clientSelectedCount) continue;
+		apps.push_back({ app.first, app.second.first });
 	}
 	maxAppPage = (apps.size() + maxAppInPage - 1) / maxAppInPage;
 }
@@ -459,11 +463,11 @@ void DrawForgotPasswordWindow() {
 			if (isTypingUser) {
 				user += input + 32;
 			}
-			else if(isTypingGmail){
+			else if (isTypingGmail) {
 				gmail += input + 32;
 			}
 		}
-		else if(input == KEY_LEFT_CONTROL || input == KEY_RIGHT_CONTROL) {}
+		else if (input == KEY_LEFT_CONTROL || input == KEY_RIGHT_CONTROL) {}
 		else {
 			if (isTypingUser) {
 				user += input;
@@ -597,7 +601,7 @@ void DrawSetPasswordWindow() {
 		if (isTypingConfirmPassword) {
 			confirmPassword += GetClipboardText();
 		}
-		else{
+		else {
 			newPassword += GetClipboardText();
 		}
 		input = 0;
@@ -937,7 +941,7 @@ void DrawConfirmationWindow() {
 			codeInput += input;
 		}
 	}
-	
+
 }
 void DrawGetFilePathWindow() {
 	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
@@ -1312,7 +1316,7 @@ void DrawAdminWindow() {
 			else if (query == "5") {
 				Draw = DrawLoginWindow;
 			}
-			if (query == "11") {
+			else if (query == "11") {
 				LoadListApp();
 				Draw = DrawListAppWindow;
 			}
@@ -1539,10 +1543,67 @@ void DrawAdminWindow() {
 	}
 }
 void DrawServerClientWindow() {
+	Vector2 mousePosition = GetMousePosition();
+	if (!clientQuery.empty()) {
+		if (clientQuery == "3") {
+			DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+			Rectangle box = { 100, 300, 1300, 500 };
+			DrawRectangleRec(box, WHITE);
+			string text = "Accept connect from " + receiverID + "?";
+			DrawText(text.c_str(), box.x + (box.width - MeasureText(text.c_str(), fontSize)) / 2, box.y + 200, fontSize, BLACK);
+			box = { 600, box.y + 100, 100, 100 };
+			DrawRectangleRec(box, GREEN);
+			DrawText("Yes", box.x + (box.width - MeasureText("Yes", fontSize)) / 2, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+			if (CheckCollisionPointRec(mousePosition, box)) {
+				DrawRectangleRec(box, GRAY);
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+					this_thread::sleep_for(std::chrono::duration<double>(0.5));
+					userInput = "Y;";
+					isUserInputChanged = true;
+					clientQuery = "4";
+				}
+			}
+			box.x += 200;
+			DrawRectangleRec(box, RED);
+			DrawText("No", box.x + (box.width - MeasureText("No", fontSize)) / 2, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+			if (CheckCollisionPointRec(mousePosition, box)) {
+				DrawRectangleRec(box, GRAY);
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+					this_thread::sleep_for(std::chrono::duration<double>(0.5));
+					userInput = "N;";
+					isUserInputChanged = true;
+					clientQuery = "4";
+				}
+			}
+			mousePosition = { -1, -1 };
+		}
+		else if (filesystem::last_write_time(SystemPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(SystemPath);
+			clientQuery = "";
+		}
+		else {
+			string text = "Excute request from admin...";
+			DrawText(text.c_str(), (SCREENWIDTH - MeasureText(text.c_str(), fontSize)) / 2, 400, fontSize, BLACK);
+			//Executing Animation
+		}
+	}
+	else {
+		string text = "Waiting for request from admin...";
+		DrawText(text.c_str(), (SCREENWIDTH - MeasureText(text.c_str(), fontSize)) / 2, 400, fontSize, BLACK);
+		//Empty Animation
+		DrawAnimation(0, 600.0f, 500.0f);
+		if (filesystem::last_write_time(SystemPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(SystemPath);
+			fstream file(SystemPath, ios::in);
+			getline(file, clientQuery, ';');
+			if (clientQuery == "3")  getline(file, receiverID, ';');
+		}
+	}
 	//Back button
 	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
 	DrawTexture(textures[2], 0, 0, WHITE);
-	Vector2 mousePosition = GetMousePosition();
 	if (CheckCollisionPointRec(mousePosition, backButton)) {
 		DrawRectangleRec(backButton, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -1555,10 +1616,7 @@ void DrawServerClientWindow() {
 	//Title
 	DrawText("SERVER - CLIENT", (SCREENWIDTH - MeasureText("SERVER - CLIENT", 80)) / 2, 100, 80, BLACK);
 	//Text
-	string text = "Waiting for request from admin...";
-	DrawText(text.c_str(), (SCREENWIDTH - MeasureText(text.c_str(), fontSize)) / 2, 400, fontSize, BLACK);
-	//Empty Animation
-	DrawAnimation(0, 600.0f, 500.0f);
+
 }
 void DrawListAppWindow() { //Change variable to list service
 	Vector2 mousePosition = GetMousePosition();
@@ -1594,7 +1652,8 @@ void DrawListAppWindow() { //Change variable to list service
 	if (CheckCollisionPointRec(mousePosition, backButton)) {
 		DrawRectangleRec(backButton, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			//Mouse on back buttond
+			isWaiting = false;
+			Draw = DrawAdminWindow;
 		}
 	}
 	//Title
@@ -1612,7 +1671,7 @@ void DrawListAppWindow() { //Change variable to list service
 
 	for (int i = (appPage - 1) * maxAppInPage; i < maxApp; i++) {
 		appY += fontSize + 20;
-		DrawText(apps[i].c_str(), box.x + 310, appY, fontSize, BLACK);
+		DrawText(apps[i].first.c_str(), box.x + 310, appY, fontSize, BLACK);
 		//Start
 		startBox.y += startBox.height + 10;
 		DrawRectangleRec(startBox, GREEN);
@@ -1626,8 +1685,9 @@ void DrawListAppWindow() { //Change variable to list service
 					if (!clientSelected[i]) continue;
 					userInput += clientList[i] + ";";
 				}
-				userInput += apps[i] + ";";
+				userInput += apps[i].second + ";";
 				isUserInputChanged = true;
+				isWaiting = true;
 			}
 		}
 		//Stop

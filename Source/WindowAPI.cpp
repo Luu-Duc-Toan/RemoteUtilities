@@ -1,56 +1,112 @@
 ﻿#include "WindowAPI.h"
 
-
-vector<string> ListInstalledApplications() {
-	std::vector<std::string> apps;
-
-	// Gọi WMIC qua pipe để lấy danh sách ứng dụng
-	FILE* pipe = _popen("wmic product get name", "r");
-	if (!pipe) {
-		std::cerr << "Loi: Khong the truy xuat danh sach ung dung. Hay kiem tra WMIC tren he thong.\n";
-		return apps;
-	}
-	char buffer[512];
-	bool firstLine = true;
-	while (fgets(buffer, sizeof(buffer), pipe)) {
-		std::string line(buffer);
-		if (firstLine) {
-			firstLine = false;
-			continue;
-		}
-		line.erase(line.find_last_not_of(" \n\r\t") + 1);
-		if (!line.empty()) {
-			apps.push_back(line);
-		}
-	}
-	_pclose(pipe);
-	return apps;
+// Convert std::string to std::wstring
+std::wstring stringToWString(const std::string& str) {
+	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), nullptr, 0);
+	std::wstring wstrTo(size_needed, 0);
+	MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+	return wstrTo;
 }
-int StartApp(string &commandSentence) {
-	auto ensureExeExtension = [](const std::string& command) -> std::string {
-		if (command.size() > 4 && command.substr(command.size() - 4) == ".exe") {
-			return command;
-		}
-		return command + ".exe";
-		};
-	commandSentence = ensureExeExtension(commandSentence);
-	std::string fullCommand = "start \"\" \"" + commandSentence + "\"";
-	const char* commandPtr = fullCommand.c_str();
-	int result = system(commandPtr);
-	if (result == 0) {
-		std::cout << "Start an application successful\n";
+// Convert std::wstring to std::string
+std::string wstringToString(const std::wstring& wstr) {
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), nullptr, 0, nullptr, nullptr);
+	std::string strTo(size_needed, 0);
+	WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, nullptr, nullptr);
+	return strTo;
+}
+// Get target path from a shortcut (.lnk)
+std::string getShortcutTarget(const std::string& shortcutPath) {
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to initialize COM: " << hr << std::endl;
+        return "";
+    }
+    IShellLinkW* psl = nullptr;
+    IPersistFile* ppf = nullptr;
+    wchar_t targetPath[MAX_PATH] = { 0 };
+
+    std::wstring wShortcutPath = stringToWString(shortcutPath);
+    if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void**)&psl))) {
+        if (SUCCEEDED(psl->QueryInterface(IID_IPersistFile, (void**)&ppf))) {
+            if (SUCCEEDED(ppf->Load(wShortcutPath.c_str(), STGM_READ))) {
+                psl->GetPath(targetPath, MAX_PATH, nullptr, 0);
+            }
+            ppf->Release();
+        }
+        psl->Release();
+    }
+
+    CoUninitialize(); // Uninitialize COM
+    return wstringToString(targetPath);
+}
+// Find shortcut files in a directory
+std::vector<std::pair<std::string, std::string>> findShortcutsInDirectory(const std::string& directory) {
+	std::vector<std::pair<std::string, std::string>> shortcuts;
+
+	WIN32_FIND_DATAA findData;
+	HANDLE hFind;
+
+	std::string searchPath = directory + "\\*.lnk";
+	hFind = FindFirstFileA(searchPath.c_str(), &findData);
+
+	if (hFind != INVALID_HANDLE_VALUE) {
+		do {
+			if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+				std::string shortcutName = findData.cFileName;
+				std::string fullPath = directory + "\\" + shortcutName;
+				std::string target = getShortcutTarget(fullPath);
+				shortcuts.emplace_back(shortcutName.substr(0, shortcutName.find_last_of(".")), target);
+			}
+		} while (FindNextFileA(hFind, &findData) != 0);
+		FindClose(hFind);
+	}
+
+	return shortcuts;
+}
+// List all applications from Desktop and Start Menu
+std::vector<std::pair<std::string, std::string>> ListAllApplications() {
+	std::vector<std::pair<std::string, std::string>> applications;
+
+	// Desktop folder for the current user
+	char desktopPath[MAX_PATH];
+	if (FAILED(SHGetFolderPathA(nullptr, CSIDL_DESKTOPDIRECTORY, nullptr, SHGFP_TYPE_CURRENT, desktopPath))) {
+		std::cerr << "Failed to retrieve Desktop path." << std::endl;
+		return applications;
+	}
+	auto desktopApps = findShortcutsInDirectory(desktopPath);
+	applications.insert(applications.end(), desktopApps.begin(), desktopApps.end());
+
+	// Start Menu folder for all users
+	std::string startMenuPath = "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs";
+	auto systemApps = findShortcutsInDirectory(startMenuPath);
+	applications.insert(applications.end(), systemApps.begin(), systemApps.end());
+
+	// Start Menu folder for the current user
+	char userStartMenuPath[MAX_PATH];
+	SHGetFolderPathA(nullptr, CSIDL_PROGRAMS, nullptr, SHGFP_TYPE_CURRENT, userStartMenuPath);
+	auto userApps = findShortcutsInDirectory(userStartMenuPath);
+	applications.insert(applications.end(), userApps.begin(), userApps.end());
+
+	return applications;
+}
+// Launch an application
+bool StartApp(const std::string& appPath) {
+	wstring wAppPath = stringToWString(appPath);
+	if (!appPath.empty() && PathFileExistsW(wAppPath.c_str())) {
+		ShellExecuteW(nullptr, L"open", wAppPath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+		return true;
 	}
 	else {
-		std::cerr << "Start an application failed\n";
+		cout << "The application does not exist or the path is invalid!" << endl;
+		return false;
 	}
-	return result;
 }
 int ShutdownSystem() {
-	int result = system("shutdown /s /t 30");
+	int result = system("shutdown /s /t 20");
 	return result;
 }
 int ResetSystem() {
-	return system("shutdown /r /t 0");
+	return system("shutdown /r /t 20");
 }
 string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed) {
 	if (key == VK_SPACE) return "[SPACE]";
@@ -170,7 +226,7 @@ void Webcam(bool& isWebcamOn, bool& isServerOn) {
 	}
 }
 bool CaptureScreen(){
-	const string outputFile = "_Data/screenshot.jpg";
+	const string outputFile = ComPath + "Screenshot/screenshot.jpg";
 	int screenWidth = 1920;
 	int screenHeight = 1080;
 

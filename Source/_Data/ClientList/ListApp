@@ -1,140 +1,22 @@
-Python 3.13.0 Add to Path (64-bit)
-Python 3.13.0 Standard Library (64-bit)
-Python 3.13.0 Tcl/Tk Support (64-bit)
-Python 3.13.0 Development Libraries (64-bit)
-Python 3.13.0 Core Interpreter (64-bit)
-Python 3.13.0 pip Bootstrap (64-bit)
-Python 3.13.0 Executables (64-bit)
-Python Launcher
-Python 3.13.0 Documentation (64-bit)
-Python 3.13.0 Test Suite (64-bit)
-Office 16 Click-to-Run Extensibility Component
-Office 16 Click-to-Run Licensing Component
-Microsoft Visual Studio Setup WMI Provider
-Windows Mobile Extension SDK Contracts
-Universal CRT Extension SDK
-ClickOnce Bootstrapper Package for Microsoft .NET Framework
-Application Verifier x64 External Package (OnecoreUAP)
-Windows App Certification Kit Native Components
-vs_communityx64msi
-Windows SDK for Windows Store Managed Apps Libs
-Microsoft Visual C++ 2022 X64 Debug Runtime - 14.42.34433
-MySQL Server 9.1
-Windows App Certification Kit x64
-vcpp_crt.redist.clickonce
-Microsoft Visual C++ 2022 X86 Additional Runtime - 14.42.34433
-Windows SDK for Windows Store Apps Tools
-icecap_collectionresourcesx64
-Eclipse Temurin JDK with Hotspot 17.0.13+11 (x64)
-Oracle VirtualBox 7.1.4
-vs_devenvsharedmsi
-IntelliTraceProfilerProxy
-WinRT Intellisense Desktop - Other Languages
-WPT Redistributables
-Universal CRT Tools x64
-Windows SDK Desktop Libs arm
-WinRT Intellisense Desktop - en-us
-VS Script Debugging Common
-Windows SDK Desktop Libs x86
-Windows Mobile Extension SDK
-Windows SDK Redistributables
-vs_FileTracker_Singleton
-Microsoft .NET Framework 4.7.2 Targeting Pack (ENU)
-Windows Desktop Extension SDK Contracts
-Windows SDK Desktop Libs arm64
-Windows SDK for Windows Store Apps DirectX x86 Remote
-MySQL Installer
-vs_clickoncesigntoolmsi
-Windows SDK Modern Non-Versioned Developer Tools
-Windows SDK Desktop Tools arm64
-vs_filehandler_amd64
-Universal General MIDI DLS Extension SDK
-Kits Configuration Installer
-Windows IoT Extension SDK
-vs_communitymsires
-Windows SDK Desktop Headers x64
-Microsoft .NET Framework 4.8 SDK
-vs_minshellinteropsharedmsi
-vs_githubprotocolhandlermsi
-Windows App Certification Kit SupportedApiList x86
-vs_Graphics_Singletonx86
-WPTx64 (OnecoreUAP)
-vs_communitysharedmsi
-Universal CRT Tools x86
-Windows SDK Desktop Tools x64
-MySQL Workbench 8.0 CE
-vs_devenx64vmsi
-Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.42.34433
-Microsoft Visual C++ 2022 X64 Additional Runtime - 14.42.34433
-Windows SDK for Windows Store Apps Libs
-WinRT Intellisense IoT - Other Languages
-vs_vswebprotocolselectormsi
-Windows SDK Modern Versioned Developer Tools
-vs_clickoncebootstrappermsires
-vs_minshellx64msi
-Microsoft Command Line Utilities 15 for SQL Server
-WinRT Intellisense PPI - en-us
-Windows Desktop Extension SDK
-vs_minshellinteropx64msi
-Microsoft SQL Server 2019 LocalDB
-WPTx64 (DesktopEditions)
-Windows SDK AddOn
-Windows SDK EULA
-IntelliTraceProfilerProxy
-Windows Team Extension SDK
-vs_minshellmsires
-Windows SDK for Windows Store Apps Headers
-WinAppDeploy
-MySQL Server 8.0
-Application Verifier x64 External Package (DesktopEditions)
-Windows SDK DirectX x86 Remote
-WinRT Intellisense IoT - en-us
-Windows App Certification Kit x64 (OnecoreUAP)
-Windows SDK for Windows Store Apps Metadata
-VS JIT Debugger
-vs_filehandler_x86
-Microsoft .NET Framework Cumulative Intellisense Pack for Visual Studio (ENU)
-WinRT Intellisense Mobile - en-us
-WinRT Intellisense UAP - Other Languages
-WinRT Intellisense UAP - en-us
-vs_minshellsharedmsi
-WinRT Intellisense PPI - Other Languages
-VS Immersive Activate Helper
-Microsoft Visual C++ 2022 X86 Minimum Runtime - 14.42.34433
-Microsoft Visual Studio Setup Configuration
-SDK ARM Additions
-Windows SDK Desktop Tools x86
-Windows SDK Facade Windows WinMD Versioned
-Windows SDK Desktop Headers arm64
-vs_clickoncebootstrappermsi
-Windows SDK for Windows Store Apps Contracts
-Microsoft System CLR Types for SQL Server 2019
-Windows IoT Extension SDK Contracts
-Windows SDK Desktop Libs x64
-vs_tipsmsi
-Microsoft ODBC Driver 17 for SQL Server
-Windows SDK Signing Tools
-Windows Subsystem for Linux
-Windows SDK for Windows Store Apps
-icecap_collection_neutral
-Windows SDK
-vs_Graphics_Singletonx64
-Windows SDK ARM Desktop Tools
-Microsoft .NET Framework 4.7.2 Targeting Pack
-vs_CoreEditorFonts
-Microsoft Update Health Tools
-MySQL Connector C++ 8.0
-Windows Team Extension SDK Contracts
-vs_SQLClickOnceBootstrappermsi
-Microsoft Visual C++ 2022 X86 Debug Runtime - 14.42.34433
-Universal CRT Redistributable
-Universal CRT Headers Libraries and Sources
-MySQL Connector/C++ 9.1
-Windows SDK Desktop Headers arm
-MSI Development Tools
-icecap_collection_x64
-SDK ARM Redistributables
-Windows SDK Desktop Headers x86
-icecap_collectionresources
-Windows SDK DirectX x64 Remote
-DiagnosticsHub_CollectionService
+Access;C:\Program Files\Microsoft Office\root\Office16\MSACCESS.EXE
+Excel;C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE
+Google Chrome;C:\Program Files\Google\Chrome\Application\chrome.exe
+Microsoft Edge;C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+OneDrive;C:\Program Files\Microsoft OneDrive\OneDrive.exe
+OneNote;C:\Program Files\Microsoft Office\root\Office16\ONENOTE.EXE
+Outlook (classic);C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+PowerPoint;C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE
+Publisher;C:\Program Files\Microsoft Office\root\Office16\MSPUB.EXE
+Skype for Business;C:\Program Files\Microsoft Office\root\Office16\lync.exe
+Sticky Notes (new);C:\Program Files\Microsoft Office\root\Office16\ONENOTE.EXE
+Visual Studio 2022;C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe
+Visual Studio Installer;C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe
+Word;C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+WSL Settings;C:\WINDOWS\Installer\{9123DBDC-D242-4A68-9E97-841E2A788E7C}\wsl.ico
+WSL;C:\WINDOWS\Installer\{9123DBDC-D242-4A68-9E97-841E2A788E7C}\wsl.ico
+Administrative Tools;C:\WINDOWS\system32\control.exe
+Anki;C:\Users\toan\AppData\Local\Programs\Anki\anki.exe
+Docker Desktop;C:\Program Files\Docker\Docker\frontend\Docker Desktop.exe
+File Explorer;
+MaxxAudio Pro by Waves – Speaker and Microphone Audio Control and Nx 3D Sound;
+Rgui;C:\Program Files\R\R-4.4.2\bin\x64\Rgui.exe
