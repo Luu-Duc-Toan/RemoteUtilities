@@ -75,7 +75,7 @@ void ServerSocket::ProcessClientMessage() {
 	else if (query == 13) {
 		Receive();
 		string appPath = string(buffer);
-		result = StartApp(appPath) ? "Y" : "N";
+		result = StopApp(appPath) ? "Y" : "N";
 	}
 	else if (query == 17) {
 		result = ShutdownSystem() == 0 ? "Y" : "N";

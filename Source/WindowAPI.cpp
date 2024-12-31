@@ -101,7 +101,7 @@ bool StartApp(const std::string& appPath) {
 		return false;
 	}
 }
-bool stopApplicationByPath(const std::string& appPath) {
+bool StopApp(const std::string& appPath) {
 	std::wstring wAppPath = stringToWString(appPath);
 	HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	if (hProcessSnap == INVALID_HANDLE_VALUE) {
@@ -125,6 +125,7 @@ bool stopApplicationByPath(const std::string& appPath) {
 						}
 						else {
 							std::cerr << "Failed to terminate process: " << appPath << std::endl;
+							return false;
 						}
 						CloseHandle(hProcess);
 						break;
@@ -136,6 +137,7 @@ bool stopApplicationByPath(const std::string& appPath) {
 	}
 	else {
 		std::cerr << "Unable to enumerate processes!" << std::endl;
+		return false;
 	}
 	CloseHandle(hProcessSnap);
 	return true;

@@ -32,7 +32,7 @@ void ClientRun(Role& role) {
 			myCurl.emailQueue.pop();
 			if (myCurl.ShouldSendToServer()) {
 				client.Send(myCurl.query.c_str());
-				if (myCurl.query == "12" || myCurl.query == "20" || myCurl.query == "21") {
+				if (myCurl.query == "12" || myCurl.query == "13" || myCurl.query == "20" || myCurl.query == "21") {
 					client.Send(myCurl.subContent.c_str());
 				}
 				client.Receive();

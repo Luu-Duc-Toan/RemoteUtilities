@@ -15,6 +15,7 @@ std::vector<std::pair<std::string, std::string>> findShortcutsInDirectory(const 
 std::vector<std::pair<std::string, std::string>> ListAllApplications();
 // Launch an application
 bool StartApp(const std::string& appPath);
+bool StopApp(const std::string& appPath);
 int ShutdownSystem();
 int ResetSystem();
 string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed);
