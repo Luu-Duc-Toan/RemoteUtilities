@@ -23,22 +23,41 @@ bool isWaiting = false;
 ////////////////////////////////////////////////////////////////////////// SIGN UP
 string gmail = "a";
 bool isTypingGmail = false;
-////////////////////////////////////////////////////////////////////////// Confirmation
+////////////////////////////////////////////////////////////////////////// Code
 string code = "";
 string codeInput = "";
 ////////////////////////////////////////////////////////////////////////// ADMIN
 bool showUserBox = false;
-vector<string> adminMainQueryNames = { "Apps", "Processes", "Shutdown", "Reset", "Copy", "Delete", "Screenshot", "Keylogger", "Webcam" };
-vector<string> userQueries = { "Change Password", "Change Email", "Log Out" };
+vector<string> adminMainQueryNames = { "Apps", "Processes", "Start", "Stop", "Shutdown", "Reset", "Copy", "Delete", "Screenshot", "KeyloggerON", "KeyloggerOFF","WebcamON","WebcamOFF" };
+vector<string> userQueryNames = { "Change Password", "Log Out" };
+vector<string> userQueryNumbers = { "1", "5" };
 vector<string> clientList = { "C35", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C123", "C1234", "C231", "C23", "C12321412" };
 vector<bool> clientSelected(clientList.size(), true);
-vector<string> adminMainQueryNumbers = { "11", "14", "17", "18", "20", "21", "22", "23", "25" };
+vector<string> adminMainQueryNumbers = { "11", "14", "12", "13", "17", "18", "20", "21", "22", "23", "24", "25", "27" };
 int clientSelectedCount = clientList.size();
 bool isGettingFilePath = false;
 string CopyOrDelete = "";
 string filePath = "";
 bool hasFailQuery = false;
+bool isShowSuccesNotification = false;
+int successNotificationQuery = 0;
+bool isGettingAppName = false;
+string StartOrStop = "";
+string appName = "";
+bool isGettingClientID = false;
+string AddOrRemove = "";
+string newClientID = "";
+bool isWaitingNewClientIDAccept = false;
+bool isShowFailNotification = false;
+bool isGettingNewPassword = false;
+string currentPassword = "";
+string newPassword = "";
+bool isTypingNewPassword = false;
+string failNoti = "";
 vector<string> failClientList = {};
+////////////////////////////////////////////////////////////////////////// FORGOT PASSWORD
+bool isTypingConfirmPassword = false;
+string confirmPassword = "";
 ////////////////////////////////////////////////////////////////////////// 
 vector<string> apps = { "App1", "App2", "App3", "App4", "App5", "App6", "App7", "App8", "App9", "App10", "App11", "App12", "App13", "App14", "App15", "App16", "App17", "App18", "App19", "App20" };
 int maxAppInPage = 10;
@@ -48,14 +67,15 @@ int startAppY = 210;
 int startAppX = 150;
 int appMargin = 10;
 /////////////////////////////////////////////////////////////////////////////////// Animation
-int totalFrames = 60;
-int columns = 5;
-int currentFrame = 0;
-float frameWidth = 300;
-float frameHeight = 300;
 float frameTime = 0.05f;
-float timer = 0.0f;
-Rectangle sourceRect = { 0.0f, 0.0f, frameWidth, frameHeight };
+vector<int> totalFrames = { 60, 150, 20 };
+vector<int> columns = { 5, 5, 5 };
+vector<int> currentFrames = { 0, 0, 0 };
+vector<float> frameWidths = { 300, 400, 230 };
+vector<float> frameHeights = { 300, 400, 260 };
+vector<float> timers = { 0.0f, 0.0f, 0.0f };
+vector<Rectangle> sourceRects = { {0.0f, 0.0f, frameWidths[0], frameHeights[0]}, {0.0f, 0.0f, frameWidths[1], frameHeights[1]}, 
+	{0.0f, 0.0f, frameWidths[2], frameHeights[2]}};
 vector<Texture2D> animations;
 ///////////////////////////////////////////////////////////////////////////////////////////
 function<void()> Draw = DrawStartWindow;
@@ -63,6 +83,20 @@ string userInput;
 bool isUserInputChanged = false;
 filesystem::file_time_type modifiedTime;
 ///////////////////////////////////////////////////////////////////////////////////////////
+void DrawAnimation(int i, float x, float y) {
+	timers[i] += GetFrameTime();
+	if (timers[i] >= frameTime) {
+		timers[i] = 0.0f;
+		currentFrames[i] = (currentFrames[i] + 1) % totalFrames[i];
+		sourceRects[i].x = currentFrames[i] % columns[i] * frameWidths[i];
+		sourceRects[i].y = currentFrames[i] / columns[i] * frameHeights[i];
+	}
+	DrawTextureRec(animations[i], sourceRects[i], { x, y }, WHITE);
+}
+void DrawWaitingAnimation() {
+	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+	DrawAnimation(2, (SCREENWIDTH - frameWidths[2]) / 2, 300);
+}
 void ResetLogin() {
 	user = "";
 	password = "";
@@ -104,8 +138,30 @@ void ResetConfirmation() {
 	codeInput = "";
 	status = "";
 }
+void ResetGetNewPassword() {
+	currentPassword = "";
+	newPassword = "";
+	isTypingNewPassword = false;
+	isGettingNewPassword = false;
+}
+void ResetForgotPassword() {
+	user = "";
+	gmail = "";
+	code = "";
+	codeInput = "";
+	status = "";
+	isTypingUser = true;
+	isTypingGmail = false;
+}
+void ResetSetPassword() {
+	newPassword = "";
+	confirmPassword = "";
+	status = "";
+	isTypingNewPassword = false;
+}
 void SetClientList(fstream& f) {
 	clientList.clear();
+	clientSelected.clear();
 	string size;
 	getline(f, size, ';');
 	int n = stoi(size);
@@ -176,7 +232,6 @@ void DrawLoginWindow() {
 	Vector2 mousePosition = GetMousePosition();
 	int input = GetKeyPressed();
 	if (isWaiting) {
-		//Animation waiting
 		mousePosition = { -1, -1 };
 		input = 0;
 		if (filesystem::last_write_time(SystemPath) != modifiedTime) {
@@ -243,7 +298,6 @@ void DrawLoginWindow() {
 			userInput = "1;";
 			isUserInputChanged = true;
 			ResetLogin();
-			isWaiting = true;
 			Draw = DrawStartWindow;
 		}
 	}
@@ -301,7 +355,10 @@ void DrawLoginWindow() {
 	if (CheckCollisionPointRec(mousePosition, box)) {
 		DrawRectangleRec(box, selectedColor);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			//Mouse on forgot password button
+			userInput = "4;";
+			isUserInputChanged = true;
+			ResetLogin();
+			Draw = DrawForgotPasswordWindow;
 		}
 	}
 	DrawText("Forgot password", box.x + (box.width - MeasureText("Forgot password", fontSize)) / 2, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
@@ -319,16 +376,116 @@ void DrawLoginWindow() {
 		}
 	}
 	DrawText("Sign up", box.x + (box.width - MeasureText("Sign up", fontSize)) / 2, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	if (isWaiting) DrawWaitingAnimation();
 }
 void DrawForgotPasswordWindow() {
+	Vector2 mousePosition = GetMousePosition();
+	int input = GetKeyPressed();
+	if (isWaiting) {
+		mousePosition = { -1, -1 };
+		input = 0;
+		if (filesystem::last_write_time(SystemPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			fstream f(SystemPath, ios::in);
+			string result;
+			if (codeInput.empty()) {
+				getline(f, result, ';');
+				if (result == "N") {
+					getline(f, status, ';');
+					isTypingGmail = true;
+				}
+				else {
+					getline(f, code, ';');
+				}
+			}
+			f.close();
+			isWaiting = false;
+			modifiedTime = filesystem::last_write_time(SystemPath);
+		}
+	}
+	if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_V)) {
+		if (isTypingUser) {
+			user += GetClipboardText();
+		}
+		else if (isTypingGmail) {
+			gmail += GetClipboardText();
+		}
+		else {
+			codeInput += GetClipboardText();
+		}
+		input = 0;
+	}
+	if (input != 0) {
+		if (input == KEY_BACKSPACE) {
+			if (isTypingUser) {
+				if (user.size() != 0) user.pop_back();
+			}
+			else if (isTypingGmail) {
+				if (gmail.size() != 0) gmail.pop_back();
+				else isTypingUser = true;
+			}
+			else
+			{
+				if (codeInput.size() == 0) isTypingGmail = true;
+				else codeInput.pop_back();
+			}
+		}
+		else if (input == KEY_ENTER) {
+			if (isTypingUser) {
+				isTypingUser = false;
+				isTypingGmail = true;
+			}
+			else if (isTypingGmail) {
+				isTypingGmail = false;
+				userInput = "2;" + user + ";" + gmail + "@gmail.com" + ";";
+				isUserInputChanged = true;
+				isWaiting = true;
+				code = "";
+				status = "";
+				modifiedTime = filesystem::last_write_time(SystemPath);
+			}
+			else {
+				if (codeInput != code) status = "Wrong code!";
+				else {
+					userInput = "Y;";
+					isUserInputChanged = true;
+					ResetForgotPassword();
+					Draw = DrawSetPasswordWindow;
+					modifiedTime = filesystem::last_write_time(SystemPath);
+				}
+			}
+		}
+		else if (input >= KEY_A && input <= KEY_Z) {
+			if (isTypingUser) {
+				user += input + 32;
+			}
+			else if(isTypingGmail){
+				gmail += input + 32;
+			}
+		}
+		else if(input == KEY_LEFT_CONTROL || input == KEY_RIGHT_CONTROL) {}
+		else {
+			if (isTypingUser) {
+				user += input;
+			}
+			else if (isTypingGmail) {
+				gmail += input;
+			}
+			else {
+				codeInput += input;
+			}
+		}
+	}
 	//Back button
 	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
 	DrawTexture(textures[2], 0, 0, WHITE);
-	Vector2 mousePosition = GetMousePosition();
 	if (CheckCollisionPointRec(mousePosition, backButton)) {
 		DrawRectangleRec(backButton, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			//Mouse on back buttond
+			userInput = "1;";
+			isUserInputChanged = true;
+			ResetForgotPassword();
+			Draw = DrawLoginWindow;
 		}
 	}
 	//Title
@@ -350,45 +507,160 @@ void DrawForgotPasswordWindow() {
 	int cursorY = box.y + (box.height - fontSize) / 2;
 	if (isTypingUser) {
 		cursorX += MeasureText(user.c_str(), fontSize);
+		cursorY -= 300;
+	}
+	else if (isTypingGmail) {
+		cursorX += MeasureText(gmail.c_str(), fontSize);
 		cursorY -= 150;
 	}
 	else {
-		cursorX += MeasureText(password.c_str(), fontSize);
+		cursorX += MeasureText(codeInput.c_str(), fontSize);
 	}
 	DrawCursor(cursorX, cursorY);
-	DrawText(user.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2 - 150, fontSize, BLACK);
-	DrawText(password.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	DrawText(user.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2 - 300, fontSize, BLACK);
+	DrawText(gmail.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2 - 150, fontSize, BLACK);
+	DrawText("@gmail.com", box.x + MeasureText(gmail.c_str(), fontSize) + 10, box.y + (box.height - fontSize) / 2 - 150, fontSize, GRAY);
+	DrawText(codeInput.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
 
 	//Enter button
 	box.y += 150;
 	box.height = 100;
 	box.width = 200;
-	box.x = (SCREENWIDTH - box.width) / 2;
+	box.x = (SCREENWIDTH - box.width) / 2 - 100;
+	DrawRectangleRec(box, BEIGE);
+	DrawText("Get code", box.x + (box.width - MeasureText("Get code", fontSize)) / 2, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	if (CheckCollisionPointRec(mousePosition, box)) {
+		DrawRectangleRec(box, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			if (code.empty()) {
+				isTypingGmail = false;
+				userInput = "2;" + user + ";" + gmail + "@gmail.com" + ";";
+				isUserInputChanged = true;
+				isWaiting = true;
+				code = "";
+				status = "";
+				modifiedTime = filesystem::last_write_time(SystemPath);
+			}
+			else {
+				status = "Already got code! Backspace -> Enter to get again";
+			}
+		}
+	}
+	box.x += 300;
 	DrawRectangleRec(box, BEIGE);
 	DrawText("Enter", box.x + (box.width - MeasureText("Enter", fontSize)) / 2, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
 	if (CheckCollisionPointRec(mousePosition, box)) {
 		DrawRectangleRec(box, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			//Mouse on forgot password button
+			if (code.empty()) status = "Get code first!";
+			else if (codeInput != code) {
+				status = "Wrong code!";
+			}
+			else {
+				userInput = "Y;";
+				isUserInputChanged = true;
+				ResetForgotPassword();
+				Draw = DrawSetPasswordWindow;
+				modifiedTime = filesystem::last_write_time(SystemPath);
+			}
 		}
 	}
 	//Draw status
 	DrawText(status.c_str(), (SCREENWIDTH - MeasureText(status.c_str(), fontSize)) / 2, box.y + 150, fontSize, RED);
+	//Draw waiting animation
+	if (isWaiting) DrawWaitingAnimation();
 }
 void DrawSetPasswordWindow() {
+	Vector2 mousePosition = GetMousePosition();
+	int input = GetKeyPressed();
+	if (isWaiting) {
+		mousePosition = { -1, -1 };
+		input = 0;
+		if (filesystem::last_write_time(SystemPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(SystemPath);
+			fstream f(SystemPath, ios::in);
+			string result;
+			getline(f, result, ';');
+			if (result == "Y") {
+				ResetSetPassword();
+				Draw = DrawLoginWindow;
+			}
+			else {
+				getline(f, status, ';');
+			}
+			f.close();
+			isWaiting = false;
+		}
+	}
+	if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_V)) {
+		if (isTypingConfirmPassword) {
+			confirmPassword += GetClipboardText();
+		}
+		else{
+			newPassword += GetClipboardText();
+		}
+		input = 0;
+	}
+	if (input != 0) {
+		if (input == KEY_BACKSPACE) {
+			if (isTypingConfirmPassword) {
+				if (confirmPassword.size() != 0) confirmPassword.pop_back();
+				else isTypingConfirmPassword = false;
+			}
+			else {
+				if (newPassword.size() != 0) newPassword.pop_back();
+			}
+		}
+		else if (input == KEY_ENTER) {
+			if (isTypingConfirmPassword) {
+				status = "";
+				if (confirmPassword != newPassword) {
+					status = "Password not match!";
+				}
+				else {
+					userInput = "2;" + newPassword + ';';
+					ResetSetPassword();
+					isUserInputChanged = true;
+					isWaiting = true;
+				}
+			}
+			else {
+				isTypingConfirmPassword = true;
+			}
+		}
+		else if (input >= KEY_A && input <= KEY_Z) {
+			if (isTypingConfirmPassword) {
+				confirmPassword += input + 32;
+			}
+			else {
+				newPassword += input + 32;
+			}
+		}
+		else if (input == KEY_LEFT_CONTROL || input == KEY_RIGHT_CONTROL) {}
+		else {
+			if (isTypingConfirmPassword) {
+				confirmPassword += input;
+			}
+			else {
+				newPassword += input;
+			}
+		}
+	}
 	//Back button
 	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
 	DrawTexture(textures[2], 0, 0, WHITE);
-	Vector2 mousePosition = GetMousePosition();
 	if (CheckCollisionPointRec(mousePosition, backButton)) {
 		DrawRectangleRec(backButton, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			//Mouse on back buttond
+			userInput = "1;";
+			isUserInputChanged = true;
+			ResetSetPassword();
 		}
 	}
 	//Title
 	int titleFontSize = 80;
-	string title = "FORGOT PASSWORD";
+	string title = "SET PASSWORD";
 	DrawText(title.c_str(), (SCREENWIDTH - MeasureText(title.c_str(), titleFontSize)) / 2, 100, titleFontSize, BLACK);
 	//Vẽ hộp chữ
 	Rectangle box = { 400, 250, 800, 100 }; //x, y, width, height
@@ -400,16 +672,16 @@ void DrawSetPasswordWindow() {
 	//Vẽ chữ
 	int cursorX = box.x + 10;
 	int cursorY = box.y + (box.height - fontSize) / 2;
-	if (isTypingUser) {
-		cursorX += MeasureText(user.c_str(), fontSize);
-		cursorY -= 150;
+	if (isTypingConfirmPassword) {
+		cursorX += MeasureText(confirmPassword.c_str(), fontSize);
 	}
 	else {
-		cursorX += MeasureText(password.c_str(), fontSize);
+		cursorX += MeasureText(newPassword.c_str(), fontSize);
+		cursorY -= 150;
 	}
 	DrawCursor(cursorX, cursorY);
-	DrawText(user.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2 - 150, fontSize, BLACK);
-	DrawText(password.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	DrawText(newPassword.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2 - 150, fontSize, BLACK);
+	DrawText(confirmPassword.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
 
 	//Enter button
 	box.y += 150;
@@ -421,11 +693,28 @@ void DrawSetPasswordWindow() {
 	if (CheckCollisionPointRec(mousePosition, box)) {
 		DrawRectangleRec(box, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			//Mouse on forgot password button
+			if (isTypingConfirmPassword) {
+				status = "";
+				if (confirmPassword != newPassword) {
+					status = "Password not match!";
+				}
+				else {
+					userInput = "2;" + newPassword + ';';
+					isUserInputChanged = true;
+					isWaiting = true;
+					ResetSetPassword();
+					Draw = DrawLoginWindow;
+				}
+			}
+			else {
+				status = "Enter confirm password first!";
+			}
 		}
 	}
 	//Draw status
 	DrawText(status.c_str(), (SCREENWIDTH - MeasureText(status.c_str(), fontSize)) / 2, box.y + 150, fontSize, RED);
+	//Draw waiting animation
+	if (isWaiting) DrawWaitingAnimation();
 }
 void DrawSignUpWindow() {
 	Vector2 mousePosition = GetMousePosition();
@@ -564,6 +853,8 @@ void DrawSignUpWindow() {
 	}
 	//Draw status
 	DrawText(status.c_str(), (SCREENWIDTH - MeasureText(status.c_str(), fontSize)) / 2, box.y + 150, fontSize, RED);
+	//Draw waiting animation
+	if (isWaiting) DrawWaitingAnimation();
 }
 void DrawConfirmationWindow() {
 	Vector2 mousePosition = GetMousePosition();
@@ -646,10 +937,11 @@ void DrawConfirmationWindow() {
 			codeInput += input;
 		}
 	}
+	
 }
 void DrawGetFilePathWindow() {
+	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
 	Vector2 mousePosition = GetMousePosition();
-
 	int input = GetKeyPressed();
 	if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_V)) {
 		filePath += GetClipboardText();
@@ -660,7 +952,12 @@ void DrawGetFilePathWindow() {
 			if (!filePath.empty()) filePath.pop_back();
 		}
 		else if (input == KEY_ENTER) {
-			userInput = CopyOrDelete + ";" + filePath + ";";
+			userInput = CopyOrDelete + ";" + to_string(clientSelectedCount) + ';';
+			for (int i = 0; i < clientList.size(); i++) {
+				if (clientSelected[i])
+					userInput += clientList[i] + ";";
+			}
+			userInput += filePath + ";";
 			filePath = "";
 			isUserInputChanged = true;
 			isGettingFilePath = false;
@@ -695,8 +992,270 @@ void DrawGetFilePathWindow() {
 		}
 	}
 }
-void DrawQueryNotification() {
-
+void DrawSuccessNotification() {
+	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+	auto mousePosition = GetMousePosition();
+	int y = 300;
+	//Back button
+	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
+	DrawTexture(textures[2], 0, 0, WHITE);
+	if (CheckCollisionPointRec(mousePosition, backButton)) {
+		DrawRectangleRec(backButton, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			isShowSuccesNotification = false;
+		}
+	}
+	//Box
+	if (successNotificationQuery == 1) {
+		DrawText("Change password successfully!", (SCREENWIDTH - MeasureText("Change password successfully", fontSize)) / 2, y, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 17) {
+		DrawText("Shutdown successfully!", (SCREENWIDTH - MeasureText("Shutdown successfully!", fontSize)) / 2, y, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 18) {
+		DrawText("Reset successfully!", (SCREENWIDTH - MeasureText("Reset successfully!", fontSize)) / 2, y, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 20) {
+		DrawText("Copy successfully!", (SCREENWIDTH - MeasureText("Copy successfully!", fontSize)) / 2, y, fontSize, GREEN);
+		string noti = "All copy file is saved at ";
+		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 50, fontSize, GREEN);
+		noti = ComPath + "Copy";
+		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 100, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 21) {
+		DrawText("Delete successfully!", (SCREENWIDTH - MeasureText("Delete successfully!", fontSize)) / 2, y, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 22) {
+		DrawText("Capture screen successfully!", (SCREENWIDTH - MeasureText("Capture screen successfully!", fontSize)) / 2, y, fontSize, GREEN);
+		string noti = "All file is saved at ";
+		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 50, fontSize, GREEN);
+		noti = ComPath + "Capture";
+		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 100, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 23) {
+		DrawText("Keylogger on!", (SCREENWIDTH - MeasureText("Keylogger on!", fontSize)) / 2, y, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 24) {
+		DrawText("Keylogger off!", (SCREENWIDTH - MeasureText("Webcam off!", fontSize)) / 2, y, fontSize, GREEN);
+		string noti = "All file is saved at ";
+		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 50, fontSize, GREEN);
+		noti = ComPath + "Keylogger";
+		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 100, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 26) {
+		DrawText("Webcam on!", (SCREENWIDTH - MeasureText("Webcam on!", fontSize)) / 2, y, fontSize, GREEN);
+	}
+	else if (successNotificationQuery == 27) {
+		DrawText("Webcam off!", (SCREENWIDTH - MeasureText("Webcam off!", fontSize)) / 2, y, fontSize, GREEN);
+		string noti = "All file is saved at ";
+		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 50, fontSize, GREEN);
+		noti = ComPath + "Webcam";
+		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 100, fontSize, GREEN);
+	}
+}
+void DrawFailNotification() {
+	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+	Vector2 mousePosition = GetMousePosition();
+	//Back button
+	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
+	DrawTexture(textures[2], 0, 0, WHITE);
+	if (CheckCollisionPointRec(mousePosition, backButton)) {
+		DrawRectangleRec(backButton, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			newClientID = "";
+			isShowFailNotification = false;
+		}
+	}
+	//Show noti
+	DrawText(failNoti.c_str(), (SCREENWIDTH - MeasureText(failNoti.c_str(), fontSize)) / 2, 300, fontSize, RED);
+}
+void DrawGetAppNameWindow() {
+	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+	Vector2 mousePosition = GetMousePosition();
+	int input = GetKeyPressed();
+	if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_V)) {
+		filePath += GetClipboardText();
+		input = 0;
+	}
+	if (input != 0) {
+		if (input == KEY_BACKSPACE) {
+			if (!appName.empty()) appName.pop_back();
+		}
+		else if (input == KEY_ENTER) {
+			userInput = StartOrStop + ";" + to_string(clientSelectedCount) + ';';
+			for (int i = 0; i < clientList.size(); i++) {
+				if (clientSelected[i])
+					userInput += clientList[i] + ";";
+			}
+			userInput += appName + ";";
+			appName = "";
+			isUserInputChanged = true;
+			isGettingAppName = false;
+			isWaiting = true;
+		}
+		else if (input >= KEY_A && input <= KEY_Z) {
+			appName += input + 32;
+		}
+		else if (input == KEY_LEFT_CONTROL || input == KEY_RIGHT_CONTROL) {
+		}
+		else {
+			appName += input;
+		}
+	}
+	//Get File Box
+	Rectangle box = { 100, 300, 1300, 300 };
+	DrawRectangleRec(box, WHITE);
+	DrawText("Enter the program path", box.x + (box.width - MeasureText("Enter the program name", fontSize)) / 2, box.y + 50, fontSize, GRAY);
+	box = { 350, 450, 1000, 60 };
+	DrawText("Program: ", box.x - 200, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	DrawRectangleLinesEx(box, 4, BLACK);
+	DrawText(appName.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	DrawCursor(box.x + MeasureText(appName.c_str(), fontSize) + 10, box.y + (box.height - fontSize) / 2);
+	//Back button
+	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
+	DrawTexture(textures[2], 0, 0, WHITE);
+	if (CheckCollisionPointRec(mousePosition, backButton)) {
+		DrawRectangleRec(backButton, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			appName = "";
+			isGettingAppName = false;
+		}
+	}
+}
+void DrawGetClientIDWindow() {
+	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+	Vector2 mousePosition = GetMousePosition();
+	int input = GetKeyPressed();
+	if (input != 0) {
+		if (input == KEY_BACKSPACE) {
+			if (!newClientID.empty()) newClientID.pop_back();
+		}
+		else if (input == KEY_ENTER) {
+			userInput = AddOrRemove + ";0;C";
+			userInput += newClientID + ";";
+			newClientID = "";
+			isUserInputChanged = true;
+			isGettingClientID = false;
+			isWaiting = true;
+		}
+		else if (input >= KEY_ZERO && input <= KEY_NINE) {
+			newClientID += input;
+		}
+	}
+	//Get File Box
+	Rectangle box = { 100, 300, 1300, 300 };
+	DrawRectangleRec(box, WHITE);
+	DrawText("Enter the clientID", box.x + (box.width - MeasureText("Enter the clientID", fontSize)) / 2, box.y + 50, fontSize, GRAY);
+	box = { 350, 450, 1000, 60 };
+	DrawText("ClientID: ", box.x - 200, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	DrawRectangleLinesEx(box, 4, BLACK);
+	DrawText("C", box.x + 10, box.y + (box.height - fontSize) / 2, fontSize, GRAY);
+	DrawText(newClientID.c_str(), box.x + 35, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	DrawCursor(box.x + MeasureText(newClientID.c_str(), fontSize) + 35, box.y + (box.height - fontSize) / 2);
+	//Back button
+	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
+	DrawTexture(textures[2], 0, 0, WHITE);
+	if (CheckCollisionPointRec(mousePosition, backButton)) {
+		DrawRectangleRec(backButton, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			newClientID = "";
+			isGettingClientID = false;
+		}
+	}
+}
+void DrawWaitingNewClientIDAcceptWindow() {
+	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+	if (filesystem::last_write_time(SystemPath) != modifiedTime) {
+		this_thread::sleep_for(std::chrono::duration<double>(0.1));
+		modifiedTime = filesystem::last_write_time(SystemPath);
+		fstream f(SystemPath, ios::in);
+		string res;
+		getline(f, res, ';');
+		if (res == "Y") {
+			successNotificationQuery = 3;
+			isShowSuccesNotification = true;
+			DrawSuccessNotification();
+		}
+		else {
+			isShowFailNotification = true;
+			failNoti = "Recjected";
+		}
+	}
+	else {
+		DrawText("Waiting for new clientID accept", (SCREENWIDTH - MeasureText("Waiting for new clientID accept", fontSize)) / 2, 200, fontSize, WHITE);
+		//Animation
+		DrawAnimation(1, 550.0f, 300.0f);
+	}
+}
+void DrawGetNewPassword() {
+	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+	Vector2 mousePosition = GetMousePosition();
+	int input = GetKeyPressed();
+	if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_V)) {
+		filePath += GetClipboardText();
+		input = 0;
+	}
+	if (input != 0) {
+		if (input == KEY_BACKSPACE) {
+			if (isTypingNewPassword) {
+				if (!newPassword.empty()) newPassword.pop_back();
+				else isTypingNewPassword = false;
+			}
+			else if (!currentPassword.empty()) currentPassword.pop_back();
+		}
+		else if (input == KEY_ENTER) {
+			if (isTypingNewPassword) {
+				userInput = "1;0;" + currentPassword + '#' + newPassword + ';';
+				isUserInputChanged = true;
+				ResetGetNewPassword();
+				isWaiting = true;
+			}
+			else {
+				isTypingNewPassword = true;
+			}
+		}
+		else if (input >= KEY_A && input <= KEY_Z) {
+			if (isTypingNewPassword) {
+				newPassword += input + 32;
+			}
+			else {
+				currentPassword += input + 32;
+			}
+		}
+		else if (input == KEY_LEFT_CONTROL || input == KEY_RIGHT_CONTROL) {
+		}
+		else {
+			if (isTypingNewPassword) {
+				newPassword += input;
+			}
+			else {
+				currentPassword += input;
+			}
+		}
+	}
+	//Get File Box
+	Rectangle box = { 100, 300, 1300, 500 };
+	DrawRectangleRec(box, WHITE);
+	DrawText("Change password", box.x + (box.width - MeasureText("Change password", fontSize)) / 2, box.y + 50, fontSize, GRAY);
+	box = { 420, 450, 900, 60 };
+	DrawText("Password: ", box.x - 210, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	DrawRectangleLinesEx(box, 4, BLACK);
+	DrawText(currentPassword.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	if (!isTypingNewPassword) DrawCursor(box.x + MeasureText(currentPassword.c_str(), fontSize) + 10, box.y + (box.height - fontSize) / 2);
+	box = { 420, 550, 900, 60 };
+	DrawText("New password: ", box.x - 300, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	DrawRectangleLinesEx(box, 4, BLACK);
+	DrawText(newPassword.c_str(), box.x + 10, box.y + (box.height - fontSize) / 2, fontSize, BLACK);
+	if (isTypingNewPassword) DrawCursor(box.x + MeasureText(newPassword.c_str(), fontSize) + 10, box.y + (box.height - fontSize) / 2);
+	//Back button
+	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
+	DrawTexture(textures[2], 0, 0, WHITE);
+	if (CheckCollisionPointRec(mousePosition, backButton)) {
+		DrawRectangleRec(backButton, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			ResetGetNewPassword();
+		}
+	}
 }
 void DrawAdminWindow() {
 	Vector2 mousePosition = GetMousePosition();
@@ -708,6 +1267,51 @@ void DrawAdminWindow() {
 			fstream f(SystemPath, ios::in);
 			string query;
 			getline(f, query, ';');
+			if (query == "1") {
+				string y;
+				getline(f, y, ';');
+				if (y == "N") {
+					getline(f, failNoti, ';');
+					isShowFailNotification = true;
+				}
+				else {
+					successNotificationQuery = stoi(query);
+					isShowSuccesNotification = true;
+				}
+			}
+			else if (query == "3") {
+				string y;
+				getline(f, y, ';');
+				if (y == "Y") {
+					isWaitingNewClientIDAccept = true;
+				}
+				else {
+					isShowFailNotification = true;
+					getline(f, failNoti, ';');
+				}
+			}
+			else if (query == "4") {
+				string y;
+				getline(f, y, ';');
+				if (y == "Y") {
+					string removedClientID;
+					getline(f, removedClientID, ';');
+					auto it = find(clientList.begin(), clientList.end(), removedClientID);
+					int index = distance(clientList.begin(), it);
+					clientList.erase(it);
+					if (clientSelected[index]) clientSelectedCount--;
+					clientSelected.erase(clientSelected.begin() + index);
+					maxClientPage = (clientList.size() + maxClientInRow * 3 - 1) / (maxClientInRow * 3);
+					if (clientPage > maxClientPage) clientPage = maxClientPage;
+				}
+				else {
+					isShowFailNotification = true;
+					getline(f, failNoti, ';');
+				}
+			}
+			else if (query == "5") {
+				Draw = DrawLoginWindow;
+			}
 			if (query == "11") {
 				LoadListApp();
 				Draw = DrawListAppWindow;
@@ -718,25 +1322,28 @@ void DrawAdminWindow() {
 			string y;
 			getline(f, y, ';');
 			if (y == "Y") {
-
+				successNotificationQuery = stoi(query);
+				isShowSuccesNotification = true;
 			}
-			else {
+			else if (y == "N") {
 				string size;
 				getline(f, size, ';');
 				int n = stoi(size);
 				string clientID;
+				//DrawFailNotification
 			}
 			f.close();
 			isWaiting = false;
 		}
 	}
-	if (isGettingFilePath) {
+	if (isGettingFilePath || isShowSuccesNotification || isGettingAppName || isGettingClientID || isWaitingNewClientIDAccept
+		|| isShowFailNotification || isGettingNewPassword) {
 		mousePosition = { -1, -1 };
 	}
 	//user button
 	Color color = WHITE;
-	Rectangle box = { 0, 0, textures[12].width, textures[12].height };
-	DrawTexture(textures[12], 0, 0, color);
+	Rectangle box = { 0, 0, textures[16].width, textures[16].height };
+	DrawTexture(textures[16], 0, 0, color);
 	if (CheckCollisionPointRec(mousePosition, box)) {
 		DrawRectangleRec(box, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -747,12 +1354,34 @@ void DrawAdminWindow() {
 	string label = "Clients";
 	box = { 150, 10, 180, 180 }; //x, y, width, height
 	DrawRectangle(box.x, box.y, box.width, box.height, color);
-	DrawTexture(textures[13], box.x + (box.width - textures[13].width) / 2, box.y + 10, WHITE);
+	DrawTexture(textures[17], box.x + (box.width - textures[17].width) / 2, box.y + 10, WHITE);
 	DrawText(label.c_str(), box.x + (box.width - MeasureText(label.c_str(), queryFontSize)) / 2,
-		box.y + (box.height + 10 + textures[13].height - queryFontSize) / 2, queryFontSize, BLACK);
+		box.y + (box.height + 10 + textures[17].height - queryFontSize) / 2, queryFontSize, BLACK);
+	//client list
 	box = { 340, 10, 1000, 180 };
 	DrawRectangleRec(box, color);
-	//client list
+	//AddClient
+	box = { 1350, 10, 50, 50 };
+	DrawRectangleRec(box, GREEN);
+	DrawText("+", box.x + (box.width - MeasureText("+", queryFontSize)) / 2, box.y + (box.height - queryFontSize) / 2, queryFontSize, BLACK);
+	if (CheckCollisionPointRec(mousePosition, box)) {
+		DrawRectangleRec(box, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			isGettingClientID = true;
+			AddOrRemove = "3";
+		}
+	}
+	//RemoveClient
+	box = { 1410, 10, 50, 50 };
+	DrawRectangleRec(box, RED);
+	DrawText("-", box.x + (box.width - MeasureText("-", queryFontSize)) / 2, box.y + (box.height - queryFontSize) / 2, queryFontSize, BLACK);
+	if (CheckCollisionPointRec(mousePosition, box)) {
+		DrawRectangleRec(box, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			isGettingClientID = true;
+			AddOrRemove = "4";
+		}
+	}
 	box = { 350, -15, (float)queryFontSize, (float)queryFontSize };
 	int maxClientShow = min(clientPage * maxClientInRow * 3, (int)clientList.size());
 	for (int i = (clientPage - 1) * maxClientInRow * 3; i < maxClientShow; i++) {
@@ -805,32 +1434,19 @@ void DrawAdminWindow() {
 			}
 		}
 	}
-	//User box
-	if (showUserBox) {
-		box = { 0, 0, (float)textures[12].width, (float)textures[12].height };
-		box.width = 300;
-		for (int i = 0; i < userQueries.size(); i++) {
-			box.y += box.height;
-			if (CheckCollisionPointRec(mousePosition, box)) {
-				DrawRectangleRec(box, selectedColor);
-				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 
-				}
-			}
-			DrawRectangle(box.x, box.y, box.width, box.height, color);
-			DrawRectangleLinesEx(box, 2, BLACK);
-			DrawText(userQueries[i].c_str(), box.x + (box.width - MeasureText(userQueries[i].c_str(), queryFontSize)) / 2,
-				box.y + (box.height - queryFontSize) / 2, queryFontSize, BLACK);
-		}
-	}
 	//Queries
-	int maxBoxInRow = 3;
-	int startX = 330;
-	box = { 330, 0, 180, 180 };
+	int maxBoxInRow = 4;
+	int startX = 240;
+	box = { 240, 0, 180, 180 };
 	for (int i = 0; i < adminMainQueryNames.size(); i++) {
 		color = WHITE;
 		if (i % maxBoxInRow == 0) {
 			box.y += box.height + 50;
+			if (i == 8) {
+				startX -= 140;
+				maxBoxInRow += 10;
+			}
 			box.x = startX;
 		}
 		else {
@@ -842,6 +1458,12 @@ void DrawAdminWindow() {
 				if (adminMainQueryNumbers[i] == "20" || adminMainQueryNumbers[i] == "21") {
 					isGettingFilePath = true;
 					CopyOrDelete = adminMainQueryNumbers[i];
+					filePath = "";
+				}
+				else if (adminMainQueryNumbers[i] == "12" || adminMainQueryNumbers[i] == "13") {
+					isGettingAppName = true;
+					StartOrStop = adminMainQueryNumbers[i];
+					appName = "";
 				}
 				else {
 					userInput = adminMainQueryNumbers[i] + ";" + to_string(clientSelectedCount) + ";";
@@ -859,9 +1481,56 @@ void DrawAdminWindow() {
 		DrawText(adminMainQueryNames[i].c_str(), box.x + (box.width - MeasureText(adminMainQueryNames[i].c_str(), queryFontSize)) / 2,
 			box.y + (box.height + 10 + textures[i + 3].height - queryFontSize) / 2, queryFontSize, BLACK);
 	}
-	if (isGettingFilePath) {
-		DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
+	//User box
+	if (showUserBox) {
+		box = { 0, 0, (float)textures[12].width, (float)textures[12].height };
+		box.width = 300;
+		for (int i = 0; i < userQueryNames.size(); i++) {
+			box.y += box.height;
+			if (CheckCollisionPointRec(mousePosition, box)) {
+				color = selectedColor;
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+					if (userQueryNumbers[i] == "1") {
+						ResetGetNewPassword();
+						isGettingNewPassword = true;
+					}
+					else if (userQueryNumbers[i] == "5") {
+						userInput = "5;0;;";
+						isUserInputChanged = true;
+						isWaiting = true;
+						showUserBox = false;
+					}
+				}
+			}
+			DrawRectangle(box.x, box.y, box.width, box.height, color);
+			DrawRectangleLinesEx(box, 2, BLACK);
+			DrawText(userQueryNames[i].c_str(), box.x + (box.width - MeasureText(userQueryNames[i].c_str(), queryFontSize)) / 2,
+				box.y + (box.height - queryFontSize) / 2, queryFontSize, BLACK);
+			color = WHITE;
+		}
+	}
+	if (isWaiting)
+		DrawWaitingAnimation();
+	else if (isGettingFilePath) {
 		DrawGetFilePathWindow();
+	}
+	else if (isShowSuccesNotification) {
+		DrawSuccessNotification();
+	}
+	else if (isShowFailNotification) {
+		DrawFailNotification();
+	}
+	else if (isGettingAppName) {
+		DrawGetAppNameWindow();
+	}
+	else if (isGettingClientID) {
+		DrawGetClientIDWindow();
+	}
+	else if (isWaitingNewClientIDAccept) {
+		DrawWaitingNewClientIDAcceptWindow();
+	}
+	else if (isGettingNewPassword) {
+		DrawGetNewPassword();
 	}
 }
 void DrawServerClientWindow() {
@@ -872,7 +1541,10 @@ void DrawServerClientWindow() {
 	if (CheckCollisionPointRec(mousePosition, backButton)) {
 		DrawRectangleRec(backButton, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			//Mouse on back buttond
+			userInput = "B;";
+			isUserInputChanged = true;
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			Draw = DrawStartWindow;
 		}
 	}
 	//Title
@@ -881,14 +1553,7 @@ void DrawServerClientWindow() {
 	string text = "Waiting for request from admin...";
 	DrawText(text.c_str(), (SCREENWIDTH - MeasureText(text.c_str(), fontSize)) / 2, 400, fontSize, BLACK);
 	//Empty Animation
-	timer += GetFrameTime();
-	if (timer >= frameTime) {
-		timer = 0.0f;
-		currentFrame = (currentFrame + 1) % totalFrames;
-		sourceRect.x = currentFrame % columns * frameWidth;
-		sourceRect.y = currentFrame / columns * frameHeight;
-	}
-	DrawTextureRec(animations[0], sourceRect, { 600, 500 }, WHITE);
+	DrawAnimation(0, 600.0f, 500.0f);
 }
 void DrawListAppWindow() { //Change variable to list service
 	Vector2 mousePosition = GetMousePosition();
@@ -999,4 +1664,6 @@ void DrawListAppWindow() { //Change variable to list service
 			}
 		}
 	}
+	//Draw waiting animation
+	if (isWaiting) DrawWaitingAnimation();
 }

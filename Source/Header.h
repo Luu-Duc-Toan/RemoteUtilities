@@ -32,6 +32,7 @@ using namespace std;
 extern string ComPath;
 extern string UIPath;
 extern string SystemPath;
+
 #pragma comment(lib, "strmiids.lib")
 #include "WindowAPI.h"
 #include "Socket.h"

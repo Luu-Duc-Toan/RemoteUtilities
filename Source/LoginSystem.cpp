@@ -55,10 +55,30 @@ void LoginSystem::ConnectDatabase() {
 		cerr << "Error Code: " << e.getErrorCode() << endl;
 	}
 }
+bool LoginSystem::isMatchGmail(const string user, const string gmail){
+	sql::PreparedStatement* pstmt = con->prepareStatement(
+		"SELECT * FROM users WHERE user = ?"
+	);
+	// Bind the user parameter and execute the statement
+	pstmt->setString(1, user.c_str());
+	// Execute the query and get the results
+	sql::ResultSet* res = pstmt->executeQuery();
+	if (!res->next()) {
+		cout << "Invalid account" << endl;
+		return false;
+	}
+	string emailTmp = res->getString("email");
+	if (emailTmp != gmail) {
+		return false;
+	}
+	delete pstmt;
+	delete res;
+	return true;
+}
 bool LoginSystem::isAccountExist(const string user) {
 	// Prepare the SELECT statement with a WHERE clause
 	sql::PreparedStatement* pstmt = con->prepareStatement(
-		"SELECT * FROM users WHERE user = ?"
+		"SELECT email FROM users WHERE user = ?"
 	);
 	// Bind the user parameter and execute the statement
 	pstmt->setString(1, user.c_str());
@@ -131,6 +151,15 @@ void LoginSystem::DeleteAccount(const string user) {
 	pstmt->setString(1, user.c_str());
 	pstmt->executeUpdate();
 	cout << "Values deleted successfully!" << endl;
+	delete pstmt;
+}
+void LoginSystem::UpdatePassword(const string user, const string password) {
+	PreparedStatement* pstmt = con->prepareStatement(
+		"UPDATE users SET password = ? WHERE user = ?"
+	);
+	pstmt->setString(1, password.c_str());
+	pstmt->setString(2, user.c_str());
+	pstmt->executeUpdate();
 	delete pstmt;
 }
 void LoginSystem::UpdateAccount(const string user, const string password, const string email, const vector<string> clientList) {

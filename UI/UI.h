@@ -30,7 +30,7 @@ extern string code;
 extern string codeInput;
 ////////////////////////////////////////////////////////////////////////// ADMIN
 extern vector<string> adminMainQueryNames;
-extern vector<string> userQueries;
+extern vector<string> userQueryNames;
 extern vector<string> clientList;
 extern vector<bool> clientSelected;
 extern string CopyOrDelete;
@@ -41,7 +41,7 @@ extern int clientMagin;
 extern int maxClientInRow;
 extern int clientPage;
 extern int maxClientPage;
-////////////////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////////////// LIST APP
 extern vector<string> apps;
 extern int maxAppInPage;
 extern int appPage; 
@@ -49,15 +49,15 @@ extern int maxAppPage;
 extern int startAppY;
 extern int startAppX;
 extern int appMargin; 
-//////////////////////////////////////////////////////////////////////// Animation 
-extern int totalFrames;
-extern int columns;
-extern int currentFrame;
-extern float frameWidth;
-extern float frameHeight;
+//////////////////////////////////////////////////////////////////////// Animation
 extern float frameTime;
-extern float timer;
-extern Rectangle sourceRect;
+extern vector<int> totalFrames;
+extern vector<int> columns;
+extern vector<int> currentFrames;
+extern vector<float> frameWidths;
+extern vector<float> frameHeights;
+extern vector<float> timers;
+extern vector<Rectangle> sourceRects;
 extern vector<Texture2D> animations;
 ////////////////////////////////////////////////////////////////////////
 extern function<void()> Draw;

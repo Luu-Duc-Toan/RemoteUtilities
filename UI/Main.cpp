@@ -12,27 +12,32 @@ int main() {
 	ComPath += "Common/";
 	UIPath = ComPath + "UI.txt";
 	SystemPath = ComPath + "System.txt";
+	modifiedTime = filesystem::last_write_time(SystemPath);
 	//Main loop
 	InitWindow(SCREENWIDTH, SCREENHEIGHT, "Test Window");
-	//Texture2D background = LoadTexture("Images/background.png");
 	textures.emplace_back(LoadTexture("_Data/Images/user.png")); //0
 	textures.emplace_back(LoadTexture("_Data/Images/server.png")); //1
 	textures.emplace_back(LoadTexture("_Data/Images/back.png")); //2
 	textures.emplace_back(LoadTexture("_Data/Images/app.png")); //3 
 	textures.emplace_back(LoadTexture("_Data/Images/process.png")); //4
-	textures.emplace_back(LoadTexture("_Data/Images/off.png")); //5
-	textures.emplace_back(LoadTexture("_Data/Images/reset.png")); //6
-	textures.emplace_back(LoadTexture("_Data/Images/copy.png")); //7
-	textures.emplace_back(LoadTexture("_Data/Images/delete.png")); //8
-	textures.emplace_back(LoadTexture("_Data/Images/screenshot.png")); //9
-	textures.emplace_back(LoadTexture("_Data/Images/keylogger.png")); //10
-	textures.emplace_back(LoadTexture("_Data/Images/webcam.png")); //11
-	textures.emplace_back(LoadTexture("_Data/Images/user2.png")); //12
-	textures.emplace_back(LoadTexture("_Data/Images/pc.png")); //13
+	textures.emplace_back(LoadTexture("_Data/Images/start.png")); //5
+	textures.emplace_back(LoadTexture("_Data/Images/stop.png")); //6
+	textures.emplace_back(LoadTexture("_Data/Images/off.png")); //7
+	textures.emplace_back(LoadTexture("_Data/Images/reset.png")); //8
+	textures.emplace_back(LoadTexture("_Data/Images/copy.png")); //9
+	textures.emplace_back(LoadTexture("_Data/Images/delete.png")); //10
+	textures.emplace_back(LoadTexture("_Data/Images/screenshot.png")); //11
+	textures.emplace_back(LoadTexture("_Data/Images/keylogger.png")); //12
+	textures.emplace_back(LoadTexture("_Data/Images/keyloggerOff.png")); //13
+	textures.emplace_back(LoadTexture("_Data/Images/webcam.png")); //14
+	textures.emplace_back(LoadTexture("_Data/Images/webcamOff.png")); //15
+	textures.emplace_back(LoadTexture("_Data/Images/user2.png")); //16
+	textures.emplace_back(LoadTexture("_Data/Images/pc.png")); //17
 
 	animations.emplace_back(LoadTexture("_Data/Images/emptySheet.png")); //0
+	animations.emplace_back(LoadTexture("_Data/Images/waitingAcceptSheet.png")); //1
+	animations.emplace_back(LoadTexture("_Data/Images/waitingSheet.png")); //2
 	//Waiting for system load succesfully
-	modifiedTime = filesystem::last_write_time(SystemPath);
 	while (true) {
 		auto newModifiedTime = filesystem::last_write_time(SystemPath);
 		if (newModifiedTime != modifiedTime) {
@@ -80,14 +85,3 @@ int main() {
 		EndDrawing();
 	}
 }
-//int main() {
-//	ComPath = filesystem::current_path().string();
-//	for (char& c : ComPath) {
-//		c = (c == '\\') ? '/' : c;
-//	}
-//	while (ComPath.back() != '/') {
-//		ComPath.pop_back();
-//	}
-//	ComPath += "Common/";
-//	LoadListApp();
-//}

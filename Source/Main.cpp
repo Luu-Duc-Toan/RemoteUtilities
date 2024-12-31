@@ -18,6 +18,7 @@ void ClientRun(Role& role);
 void ServerRun(Role& role);
 void AdminRun();
 void Client_ServerRun();
+void Login();
 
 void ClientRun(Role& role) {
 	client.TurnOn();
@@ -28,7 +29,7 @@ void ClientRun(Role& role) {
 			myCurl.emailQueue.pop();
 			if (myCurl.ShouldSendToServer()) {
 				client.Send(myCurl.query.c_str());
-				if (myCurl.query ==  "12" || myCurl.query == "20" || myCurl.query == "21") {
+				if (myCurl.query == "12" || myCurl.query == "20" || myCurl.query == "21") {
 					client.Send(myCurl.subContent.c_str());
 				}
 				client.Receive();
@@ -48,17 +49,23 @@ void ServerRun(Role& role) {
 	}
 }
 void Client_ServerRun() {
+	modifiedTime = filesystem::last_write_time(UIPath);
 	myCurl.isAutoReceiving = true;
 	thread serverThread(ServerRun, ref(account.role));
 	thread clientThread(ClientRun, ref(account.role));
 	cout << "S to break: ";
 	while (true) {
-		char ch;
-		cin >> ch; //Not this
-		if (ch == 's') {
-			myCurl.isAutoReceiving = false;
-			account.role = Role::NONE;
-			break;
+		if (filesystem::last_write_time(UIPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			string res;
+			fstream f(UIPath, ios::in);
+			getline(f, res, ';');
+			if (res == "B") {
+				myCurl.isAutoReceiving = false;
+				account.role = Role::NONE;
+				modifiedTime = filesystem::last_write_time(UIPath);
+				break;
+			}
 		}
 	}
 	client.Reset();
@@ -67,8 +74,191 @@ void Client_ServerRun() {
 	serverThread.join();
 	return GetRole();
 }
-
+void ForgotPassword() {
+	while (true) {
+		if (filesystem::last_write_time(UIPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(UIPath);
+			fstream f(UIPath, ios::in);
+			string mode, user, email;
+			getline(f, mode, ';');
+			if (mode == "1") {
+				cout << "Back!" << endl;
+				f.close();
+				return Login();
+			}
+			else if (mode == "2") {
+				getline(f, user, ';');
+				getline(f, email, ';');
+				f.close();
+				if (loginSystem.isAccountExist(user)) {
+					if (loginSystem.isMatchGmail(user, email)) {
+						int code = rand() % 1000000;
+						string content = "Validation code: " + to_string(code);
+						cout << "Code: " << code << endl;
+						confirmationCurl.Send(email, content);
+						f.open(SystemPath, ios::out);
+						f << "Y;" + to_string(code) + ';';
+						f.close();
+						while (true) {
+							if (filesystem::last_write_time(UIPath) != modifiedTime) {
+								this_thread::sleep_for(std::chrono::duration<double>(0.1));
+								modifiedTime = filesystem::last_write_time(UIPath);
+								fstream f(UIPath, ios::in);
+								string result;
+								getline(f, result, ';');
+								f.close();
+								if (result == "Y") {
+									while (true) {
+										if (filesystem::last_write_time(UIPath) != modifiedTime) { //Set password
+											this_thread::sleep_for(std::chrono::duration<double>(0.1));
+											modifiedTime = filesystem::last_write_time(UIPath);
+											f.open(UIPath, ios::in);
+											string mode, newPassword;
+											getline(f, mode, ';');
+											if (mode == "1") {
+												cout << "Back!" << endl;
+												f.close();
+												return Login();
+											}
+											else if (mode == "2") {
+												getline(f, newPassword, ';');
+												f.close();
+												loginSystem.UpdatePassword(user, newPassword);
+												cout << "Set password successfully!" << endl;
+												fstream file(SystemPath, ios::out);
+												file << "Y;";
+												file.close();
+												return Login();
+											}
+										}
+									}
+								}
+								else {
+									cout << "Back!" << endl;
+									return Login();
+								}
+							}
+						}
+					}
+					else {
+						f.open(SystemPath, ios::out);
+						f << "N;Email not match;"; //N;Email not match;
+						f.close();
+						cout << "Email not match!" << endl;
+					}
+				}
+				else {
+					f.open(SystemPath, ios::out);
+					f << "N;Account not exist;"; //N;Account not exist;
+					f.close();
+					cout << "Account not exist!" << endl;
+				}
+			}
+		}
+	}
+}
+void Login() {
+	auto modifiedTime = filesystem::last_write_time(UIPath);
+	while (true) {
+		if (filesystem::last_write_time(UIPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(UIPath);
+			string mode, user, password;
+			fstream f(UIPath, ios::in);
+			getline(f, mode, ';');
+			if (mode == "1") { //Back
+				cout << "Back!" << endl;
+				f.close();
+				return GetRole();
+			}
+			else if (mode == "3") { //Sign up
+				f.close();
+				while (true) {
+					if (filesystem::last_write_time(UIPath) != modifiedTime) {
+						this_thread::sleep_for(std::chrono::duration<double>(0.1));
+						modifiedTime = filesystem::last_write_time(UIPath);
+						f.open(UIPath, ios::in);
+						string mode;
+						getline(f, mode, ';');
+						if (mode == "1") {
+							cout << "Back!" << endl;
+							f.close();
+							return Login();
+						}
+						string user, password, email;
+						getline(f, user, ';');
+						getline(f, password, ';');
+						getline(f, email, ';');
+						f.close();
+						if (loginSystem.isAccountExist(user)) {
+							f.open(SystemPath, ios::out);
+							f << "N;Account already exist!;";
+							f.close();
+							cout << "Account already exist!" << endl;
+							continue;
+						}
+						email += "@gmail.com";
+						int code = rand() % 1000000;
+						string content = "Validation code: " + to_string(code);
+						cout << "Code: " << code << endl;
+						confirmationCurl.Send(email, content);
+						f.open(SystemPath, ios::out);
+						f << "Y;" + to_string(code) + ';';
+						f.close();
+						while (true) {
+							if (filesystem::last_write_time(UIPath) != modifiedTime) {
+								this_thread::sleep_for(std::chrono::duration<double>(0.1));
+								modifiedTime = filesystem::last_write_time(UIPath);
+								fstream f(UIPath, ios::in);
+								string result;
+								getline(f, result, ';');
+								f.close();
+								if (result == "Y") {
+									loginSystem.InsertAccount(user, password, email);
+									cout << "Sign up successfully!" << endl;
+									return Login();
+								}
+								else {
+									cout << "Sign up failed!" << endl;
+								}
+							}
+						}
+					}
+				}
+			}
+			else if (mode == "2") { //Login
+				getline(f, user, ';');
+				getline(f, password, ';');
+				f.close();
+				if (loginSystem.SearchAccount(user, password, account)) {
+					string res = "Y;";
+					res += to_string(account.clientList.size()) + ";";
+					for (string& clientID : account.clientList) {
+						res += clientID + ";";
+					}
+					f.open(SystemPath, ios::out);
+					f << res;
+					f.close();
+					account.SetRole(Role::ADMIN);
+					myCurl.UpdateSearchQuery(account.adminID);
+					return AdminRun();
+				}
+				else {
+					f.open(SystemPath, ios::out);
+					f << "N;Wrong password;";
+					f.close();
+				}
+			}
+			else {
+				f.close();
+				return ForgotPassword();
+			}
+		}
+	}
+}
 void AdminRun() {
+	modifiedTime = filesystem::last_write_time(UIPath);
 	myCurl.isAutoReceiving = true;
 	int query = -1;
 	vector<string> selectedClient;
@@ -96,149 +286,119 @@ void AdminRun() {
 		if (query == -1) continue;
 		else if (query == 1) { //for 1 - 10: dont need to send email: change password, email
 			string password, newPassword;
-			while (true) {
-				cout << "Password: "; cin >> password;
-				cout << "New password: "; cin >> newPassword;
-				if (password != account.password)
-					cout << "Wrong password!" << endl;
-				else break;
+			int end = UIContent.find('#');
+			password = UIContent.substr(0, end);
+			newPassword = UIContent.substr(end + 1);
+			cout << "Change password: " << password << " -> " << newPassword << endl;
+			if (password == account.password) {
+				cout << "Change password successfully!" << endl;
+				fstream file(SystemPath, ios::out);
+				file << "1;Y;";
+				file.close();
+				account.SetPassword(newPassword);
+				loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
 			}
-			account.SetPassword(newPassword);
-			loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
-		}
-		else if (query == 2) { //Change email
-			string email, newEmail;
-			while (true)
-			{
-				bool exitLoop = false;
-				if (!account.email.empty()) {
-					while (true) {
-						cout << "Email: "; cin >> email;
-						if (email != account.email)
-							cout << "Wrong email!" << endl;
-						else break;
-					}
-				}
-				cout << "New email: "; cin >> newEmail;
-				int code = rand() % 1000000;
-				cout << "Code: " << code << endl;
-				string content = "Validation code: " + to_string(code);
-				confirmationCurl.Send(newEmail, content);
-				int inputCode;
-				while (true) {
-					cin >> inputCode;
-					if (inputCode == code) {
-						cout << "Change email successfully!" << endl;
-						exitLoop = true;
-						break;
-					}
-					else {
-						cout << "Wrong code!" << endl;
-					}
-				}
-				if (exitLoop) break;
+			else {
+				cout << "Change password failed!" << endl;
+				fstream file(SystemPath, ios::out);
+				file << "1;N;Wrong password!;";
+				file.close();
 			}
-			account.SetEmail(newEmail);
-			loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
 		}
 		else if (query == 3) { //Add clientID
-			string newClientID;
-			while (true) {
-				cout << "New clientID: "; cin >> newClientID;
-				bool validNewClientID = true;
-				int newClientIDNum = ExtractIDNum(newClientID);
-				int currentClientIDNum = ExtractIDNum(account.clientID);
-				if (newClientIDNum > loginSystem.GetMaxClientID()) {
-					cout << "ClientID not exist!" << endl;
-					validNewClientID = false;
-				}
-				else if (newClientIDNum == currentClientIDNum) {
-					cout << "Can't add this pc's clientID" << endl;
-					validNewClientID = false;
-				}
-				else {
-					for (string& clientID : account.clientList) {
-						int clientIDNum = ExtractIDNum(clientID);
-						if (newClientIDNum == clientIDNum) {
-							cout << "ClientID already exist!" << endl;
-							validNewClientID = false;
-						}
-					}
-				}
-				if (validNewClientID) break;
+			string newClientID = UIContent;
+			cout << "Add clientID: " << newClientID;
+			bool validNewClientID = true;
+			int newClientIDNum = ExtractIDNum(newClientID);
+			int currentClientIDNum = ExtractIDNum(account.clientID);
+			if (newClientIDNum > loginSystem.GetMaxClientID()) {
+				fstream file(SystemPath, ios::out);
+				file << "3;N;ClientID not exist!;";
+				file.close();
+				validNewClientID = false;
 			}
-			string content = account.adminID + ";" + to_string(query) + ";";
-			myCurl.SendEmail({ newClientID }, content);
-			stack<string> emailStack;
-			auto start = chrono::high_resolution_clock::now();
-			while (true) {
-				auto end = chrono::high_resolution_clock::now();
-				auto duration = chrono::duration_cast<chrono::seconds>(end - start);
-				if (duration.count() >= 600) {
-					cout << "Time out!" << endl;
-					cout << "Resend email? (send again/wait/exit): " << endl;
-					char input = 'o';
-					cin >> input;
-					if (input == 's') {
-						myCurl.SendEmail({ newClientID }, content);
-						start = chrono::high_resolution_clock::now();
-					}
-					else if (input == 'w') {
-						start = chrono::high_resolution_clock::now();
-					}
-					else {
-						break;
+			else if (newClientIDNum == currentClientIDNum) {
+				fstream file(SystemPath, ios::out);
+				file << "3;N;Can't add yourself;";
+				file.close();
+				validNewClientID = false;
+			}
+			else {
+				for (string& clientID : account.clientList) {
+					int clientIDNum = ExtractIDNum(clientID);
+					if (newClientIDNum == clientIDNum) {
+						fstream file(SystemPath, ios::out);
+						file << "3;N;ClientID already exist!;";
+						file.close();
+						validNewClientID = false;
 					}
 				}
-				if (myCurl.emailQueue.empty()) continue;
-				else {
-					myCurl.Preprocess();
-					if (myCurl.receiverID == newClientID) {
-						if (myCurl.query == "3") {
-							if (myCurl.subContent == "Y") {
-								cout << "Add new clientID" << newClientID << endl;
-								account.AddClientID(newClientID);
-								loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
-							}
-							else {
-								cout << "Receive from " << newClientID << " " << myCurl.subContent << endl;
-								cout << "Don't add new clientID" << newClientID << endl;
-							}
-							while (!emailStack.empty()) {
-								myCurl.emailQueue.push(emailStack.top());
-								emailStack.pop();
-							}
-							break;
-						}
-					}
+			}
+			if (validNewClientID) {
+				fstream file(SystemPath, ios::out);
+				file << "3;Y;;";
+				file.close();
+				string content = account.adminID + ";" + to_string(query) + ";";
+				myCurl.SendEmail({ newClientID }, content);
+				stack<string> emailStack;
+				while (true) {
+					if (myCurl.emailQueue.empty()) continue;
 					else {
-						emailStack.push(myCurl.emailQueue.front());
-						myCurl.emailQueue.pop();
+						myCurl.Preprocess();
+						if (myCurl.receiverID == newClientID) {
+							if (myCurl.query == "3") {
+								if (myCurl.subContent == "Y") {
+									fstream file(UIPath, ios::out);
+									file << "Y;";
+									file.close();
+									account.AddClientID(newClientID);
+									loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
+								}
+								else {
+									fstream file(UIPath, ios::out);
+									file << "N;";
+									file.close();
+									cout << "Reject from clientID: " << newClientID << endl;
+								}
+								while (!emailStack.empty()) {
+									myCurl.emailQueue.push(emailStack.top());
+									emailStack.pop();
+								}
+								break;
+							}
+						}
+						else {
+							emailStack.push(myCurl.emailQueue.front());
+							myCurl.emailQueue.pop();
+						}
 					}
 				}
 			}
 		}
 		else if (query == 4) { //Remove clientID
-			string removeClientID;
-			cout << "Remove clientID: ";
-			while (true) {
-				cin >> removeClientID;
-				if (account.RemoveClientID(removeClientID)) {
-					loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
-				}
-				else {
-					cout << "ClientID not exist!" << endl;
-					cout << "Remove clientID: ";
-				}
+			string removeClientID = UIContent;
+			cout << "Remove clientID: " << removeClientID;
+			if (account.RemoveClientID(removeClientID)) {
+				loginSystem.UpdateAccount(account.user, account.password, account.email, account.clientList);
+				fstream file(SystemPath, ios::out);
+				file << "4;Y;" + removeClientID + ';';
+				file.close();
+				cout << "Remove clientID successfully!" << endl;
+			}
+			else {
+				fstream file(SystemPath, ios::out);
+				file << "4;N;Not be in your client list";
+				file.close();
+				cout << "Remove clientID failed!" << endl;
 			}
 		}
 		else if (query == 5) { //Log out
 			myCurl.isAutoReceiving = false;
 			account.Reset();
-			break;
-		}
-		else if (query == 6) { //Select client
-
+			fstream file(SystemPath, ios::out);
+			file << "5;;";
+			file.close();
+			return Login();
 		}
 		//6,7
 		else if (query > 10) { //for 11 - ...
@@ -250,110 +410,10 @@ void AdminRun() {
 			myCurl.AdminProcess(selectedClient, query);
 			fstream file(SystemPath, ios::out);
 			file << to_string(query) + ";Y;";
+			file.close();
 		}
 	}
 	return GetRole();
-}
-void Login() {
-	auto NewModifiedTime = filesystem::last_write_time(UIPath);
-	while (true) {
-		auto NewModifiedTime = filesystem::last_write_time(UIPath);
-		if (NewModifiedTime == modifiedTime) {
-			modifiedTime = NewModifiedTime;
-			continue;
-		}
-		this_thread::sleep_for(std::chrono::duration<double>(0.1));
-		string mode, user, password;
-		fstream f(UIPath, ios::in);
-		getline(f, mode, ';');
-		if (mode == "1") { //Back
-			cout << "Back!" << endl;
-			f.close();
-			return GetRole();
-		}
-		else if (mode == "3") { //Sign up
-			f.close();
-			modifiedTime = filesystem::last_write_time(UIPath);
-			while (true) {
-				NewModifiedTime = filesystem::last_write_time(UIPath);
-				if (NewModifiedTime != modifiedTime) {
-					this_thread::sleep_for(std::chrono::duration<double>(0.1));
-					modifiedTime = filesystem::last_write_time(UIPath);
-					f.open(UIPath, ios::in);
-					string mode;
-					getline(f, mode, ';');
-					if (mode == "1") {
-						cout << "Back!" << endl;
-						f.close();
-						return Login();
-					}
-					string user, password, email;
-					getline(f, user, ';');
-					getline(f, password, ';');
-					getline(f, email, ';');
-					f.close();
-					if (loginSystem.isAccountExist(user)) {
-						f.open(SystemPath, ios::out);
-						f << "N;Account already exist!;";
-						f.close();
-						cout << "Account already exist!" << endl;
-						continue;
-					}
-					email += "@gmail.com";
-					int code = rand() % 1000000;
-					string content = "Validation code: " + to_string(code);
-					cout << "Code: " << code << endl;
-					confirmationCurl.Send(email, content);
-					f.open(SystemPath, ios::out);
-					f << "Y;" + to_string(code) + ';';
-					f.close();
-					while (true) {
-						NewModifiedTime = filesystem::last_write_time(UIPath);
-						if (NewModifiedTime != modifiedTime) {
-							this_thread::sleep_for(std::chrono::duration<double>(0.1));
-							modifiedTime = filesystem::last_write_time(UIPath);
-							fstream f(UIPath, ios::in);
-							string result;
-							getline(f, result, ';');
-							f.close();
-							if (result == "Y") {
-								loginSystem.InsertAccount(user, password, email);
-								cout << "Sign up successfully!" << endl;
-								return Login();
-							}
-							else {
-								cout << "Sign up failed!" << endl;
-							}
-						}
-					}
-				}
-			}
-		}
-		else {
-			getline(f, user, ';');
-			getline(f, password, ';');
-			f.close();
-			if (loginSystem.SearchAccount(user, password, account)) {
-				string res = "Y;";
-				res += to_string(account.clientList.size()) + ";";
-				for (string &clientID : account.clientList) {
-					res += clientID + ";";
-				}
-				f.open(SystemPath, ios::out);
-				f << res;
-				f.close();
-				account.SetRole(Role::ADMIN);
-				myCurl.UpdateSearchQuery(account.adminID);
-				modifiedTime = filesystem::last_write_time(UIPath);
-				return AdminRun();
-			}
-			else {
-				f.open(SystemPath, ios::out);
-				f << "N;Wrong password;";
-				modifiedTime = filesystem::last_write_time(UIPath);
-			}
-		}
-	}
 }
 void GetRole() {
 	myCurl.isAutoReceiving = false;
@@ -371,8 +431,8 @@ void GetRole() {
 			if (userInput == "1") { //Client - Server
 				account.SetRole(Role::CLIENT_SERVER);
 				myCurl.UpdateSearchQuery(account.clientID);
-				Client_ServerRun();
-				cout << "Client - Server!" << endl;
+				cout << "Client - Server! ID " + account.clientID << endl;
+				return Client_ServerRun();
 			}
 			else if (userInput == "2") { //Admin
 				cout << "Admin!" << endl;

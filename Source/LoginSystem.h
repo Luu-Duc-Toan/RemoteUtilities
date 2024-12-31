@@ -17,6 +17,8 @@ struct LoginSystem {
     sql::Connection* con = nullptr;
 	void ConnectDatabase();
 	bool isAccountExist(const string user);
+	void UpdatePassword(const string user, const string password);
+	bool isMatchGmail(const string user, const string gmail);
 	bool SearchAccount(const string user, const string password, Account& account);
 	void InsertAccount(const string user, const string password, const string email);
 	void DeleteAccount(const string user);
