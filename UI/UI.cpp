@@ -67,12 +67,12 @@ int startAppY = 210;
 int startAppX = 150;
 int appMargin = 10;
 /////////////////////////////////////////////////////////////////////////////////// Animation
-float frameTime = 0.05f;
-vector<int> totalFrames = { 60, 150, 20 };
+vector<float> frameTimes = { 0.04f, 0.018f, 0.03f };
+vector<int> totalFrames = { 60, 150, 35 };
 vector<int> columns = { 5, 5, 5 };
 vector<int> currentFrames = { 0, 0, 0 };
-vector<float> frameWidths = { 300, 400, 230 };
-vector<float> frameHeights = { 300, 400, 260 };
+vector<float> frameWidths = { 300, 400, 300 };
+vector<float> frameHeights = { 300, 400, 300 };
 vector<float> timers = { 0.0f, 0.0f, 0.0f };
 vector<Rectangle> sourceRects = { {0.0f, 0.0f, frameWidths[0], frameHeights[0]}, {0.0f, 0.0f, frameWidths[1], frameHeights[1]}, 
 	{0.0f, 0.0f, frameWidths[2], frameHeights[2]}};
@@ -85,7 +85,7 @@ filesystem::file_time_type modifiedTime;
 ///////////////////////////////////////////////////////////////////////////////////////////
 void DrawAnimation(int i, float x, float y) {
 	timers[i] += GetFrameTime();
-	if (timers[i] >= frameTime) {
+	if (timers[i] >= frameTimes[i]) {
 		timers[i] = 0.0f;
 		currentFrames[i] = (currentFrames[i] + 1) % totalFrames[i];
 		sourceRects[i].x = currentFrames[i] % columns[i] * frameWidths[i];
@@ -1330,7 +1330,12 @@ void DrawAdminWindow() {
 				getline(f, size, ';');
 				int n = stoi(size);
 				string clientID;
-				//DrawFailNotification
+				failNoti = "Execution failed for client IDs:";
+				for (int i = 0; i < n; i++) {
+					getline(f, clientID, ';');
+					failNoti += " " + clientID;
+				}
+				isShowFailNotification = true;
 			}
 			f.close();
 			isWaiting = false;

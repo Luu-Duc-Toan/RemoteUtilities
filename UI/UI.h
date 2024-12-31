@@ -50,7 +50,7 @@ extern int startAppY;
 extern int startAppX;
 extern int appMargin; 
 //////////////////////////////////////////////////////////////////////// Animation
-extern float frameTime;
+extern vector<float> frameTimes;
 extern vector<int> totalFrames;
 extern vector<int> columns;
 extern vector<int> currentFrames;
