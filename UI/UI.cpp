@@ -31,13 +31,14 @@ string clientQuery = "";
 string yourClientID = "";
 string receiverID = "";
 ////////////////////////////////////////////////////////////////////////// ADMIN
+string yourAdminID = "";
 bool showUserBox = false;
-vector<string> adminMainQueryNames = { "Apps", "Processes", "Start", "Stop", "Shutdown", "Reset", "Copy", "Delete", "Screenshot", "KeyloggerON", "KeyloggerOFF","WebcamON","WebcamOFF" };
+vector<string> adminMainQueryNames = { "Apps", "Processes", "Shutdown", "Reset", "Copy", "Delete", "Screenshot", "KeyloggerON", "KeyloggerOFF","WebcamON","WebcamOFF" };
 vector<string> userQueryNames = { "Change Password", "Log Out" };
 vector<string> userQueryNumbers = { "1", "5" };
 vector<string> clientList = { "C35", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C1234", "C231", "C23", "C123", "C123", "C1234", "C231", "C23", "C12321412" };
 vector<bool> clientSelected(clientList.size(), true);
-vector<string> adminMainQueryNumbers = { "11", "14", "12", "13", "17", "18", "20", "21", "22", "23", "24", "26", "27" };
+vector<string> adminMainQueryNumbers = { "11", "14", "17", "18", "20", "21", "22", "23", "24", "26", "27" };
 int clientSelectedCount = clientList.size();
 bool isGettingFilePath = false;
 string CopyOrDelete = "";
@@ -192,6 +193,24 @@ void DrawStartWindow() {
 	Vector2 mousePosition = GetMousePosition();
 	Color boxSelectedColor = selectedColor; // { 74, 73, 71, 255 };
 	int titleFontSize = 120;
+	if (isWaiting) {
+		mousePosition = { -1, -1 };
+		if (filesystem::last_write_time(SystemPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(SystemPath);
+			fstream f(SystemPath, ios::in);
+			string mode, y;
+			getline(f, mode, ';');
+			if (mode == "1") {
+				getline(f, yourClientID, ';');
+				Draw = DrawServerClientWindow;
+			}
+			else if (mode == "2") {
+				Draw = DrawLoginWindow;
+			}
+			isWaiting = false;
+		}
+	}
 	//Title
 	string title = "REMOTE UTILITIES";
 	DrawText(title.c_str(), (SCREENWIDTH - MeasureText(title.c_str(), titleFontSize)) / 2, 70, titleFontSize, BLACK);
@@ -207,7 +226,7 @@ void DrawStartWindow() {
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 			isUserInputChanged = true;
 			userInput = "1;";
-			Draw = DrawServerClientWindow;
+			isWaiting = true;
 		}
 	}
 	DrawRectangleRec(box, color);
@@ -223,14 +242,15 @@ void DrawStartWindow() {
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 			isUserInputChanged = true;
 			userInput = "2;";
-			Draw = DrawLoginWindow;
-			modifiedTime = filesystem::last_write_time(SystemPath);
+			isWaiting = true;
 		}
 	}
 	DrawRectangleRec(box, color);
 	DrawTexture(textures[1], box.x + (box.width - textures[0].width) / 2, box.y + 30, WHITE);
 	DrawText(key.c_str(), box.x + (box.width - MeasureText(key.c_str(), fontSize)) / 2,
 		box.y + (box.height + 30 + textures[0].height - fontSize) / 2, fontSize, BLACK);
+	if(isWaiting)
+		DrawWaitingAnimation();
 }
 void DrawLoginWindow() {
 	Vector2 mousePosition = GetMousePosition();
@@ -243,7 +263,8 @@ void DrawLoginWindow() {
 			fstream f(SystemPath, ios::in);
 			string y;
 			getline(f, y, ';');
-			if (y == "Y") { //Y;size;clientID1;clientID2;...;
+			if (y == "Y") { 
+				getline(f, yourAdminID, ';');
 				SetClientList(f);
 				Draw = DrawAdminWindow;
 			}
@@ -997,6 +1018,9 @@ void DrawGetFilePathWindow() {
 	}
 }
 void DrawSuccessNotification() {
+	if (successNotificationQuery == 11) {
+		isShowSuccessNotification = false;
+	}
 	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
 	auto mousePosition = GetMousePosition();
 	int y = 300;
@@ -1351,21 +1375,25 @@ void DrawAdminWindow() {
 	}
 	//user button
 	Color color = WHITE;
-	Rectangle box = { 0, 0, textures[16].width, textures[16].height };
-	DrawTexture(textures[16], 0, 0, color);
+	Rectangle box = { 0, 0, textures[14].width, textures[14].height };
+	DrawTexture(textures[14], 0, 0, color);
 	if (CheckCollisionPointRec(mousePosition, box)) {
 		DrawRectangleRec(box, GRAY);
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 			showUserBox = !showUserBox;
 		}
 	}
+	//Admin ID
+	box = { 0, (float)textures[14].height + 30, 140, 60};
+	DrawRectangleRec(box, color);
+	DrawText(("ID: " + yourAdminID).c_str(), box.x + (box.width - MeasureText(("ID: " + yourAdminID).c_str(), queryFontSize)) / 2, box.y + (box.height - queryFontSize) / 2, queryFontSize, BLACK);
 	//Client icon
 	string label = "Clients";
 	box = { 150, 10, 180, 180 }; //x, y, width, height
 	DrawRectangle(box.x, box.y, box.width, box.height, color);
-	DrawTexture(textures[17], box.x + (box.width - textures[17].width) / 2, box.y + 10, WHITE);
+	DrawTexture(textures[15], box.x + (box.width - textures[15].width) / 2, box.y + 10, WHITE);
 	DrawText(label.c_str(), box.x + (box.width - MeasureText(label.c_str(), queryFontSize)) / 2,
-		box.y + (box.height + 10 + textures[17].height - queryFontSize) / 2, queryFontSize, BLACK);
+		box.y + (box.height + 10 + textures[15].height - queryFontSize) / 2, queryFontSize, BLACK);
 	//client list
 	box = { 340, 10, 1000, 180 };
 	DrawRectangleRec(box, color);
@@ -1452,10 +1480,6 @@ void DrawAdminWindow() {
 		color = WHITE;
 		if (i % maxBoxInRow == 0) {
 			box.y += box.height + 50;
-			if (i == 8) {
-				startX -= 140;
-				maxBoxInRow += 10;
-			}
 			box.x = startX;
 		}
 		else {
@@ -1615,8 +1639,7 @@ void DrawServerClientWindow() {
 	}
 	//Title
 	DrawText("SERVER - CLIENT", (SCREENWIDTH - MeasureText("SERVER - CLIENT", 80)) / 2, 100, 80, BLACK);
-	//Text
-
+	DrawText(("ID: " + yourClientID).c_str(), (SCREENWIDTH - MeasureText(("ID: " + yourClientID).c_str(), fontSize)) / 2, 220, fontSize, BLACK);
 }
 void DrawListAppWindow() { //Change variable to list service
 	Vector2 mousePosition = GetMousePosition();

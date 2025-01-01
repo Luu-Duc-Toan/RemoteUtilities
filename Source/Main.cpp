@@ -238,7 +238,7 @@ void Login() {
 				getline(f, password, ';');
 				f.close();
 				if (loginSystem.SearchAccount(user, password, account)) {
-					string res = "Y;";
+					string res = "Y;" + account.adminID + ';';
 					res += to_string(account.clientList.size()) + ";";
 					for (string& clientID : account.clientList) {
 						res += clientID + ";";
@@ -447,10 +447,16 @@ void GetRole() {
 				account.SetRole(Role::CLIENT_SERVER);
 				myCurl.UpdateSearchQuery(account.clientID);
 				cout << "Client - Server! ID " + account.clientID << endl;
+				f.open(SystemPath, ios::out);
+				f << "1;" + account.clientID;
+				f.close();
 				return Client_ServerRun();
 			}
 			else if (userInput == "2") { //Admin
 				cout << "Admin!" << endl;
+				f.open(SystemPath, ios::out);
+				f << "2;";
+				f.close();
 				return Login();
 			}
 			else {

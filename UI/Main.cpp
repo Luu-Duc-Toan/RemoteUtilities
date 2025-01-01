@@ -15,28 +15,26 @@ int main() {
 	modifiedTime = filesystem::last_write_time(SystemPath);
 	//Main loop
 	InitWindow(SCREENWIDTH, SCREENHEIGHT, "Test Window");
-	textures.emplace_back(LoadTexture("_Data/Images/user.png")); //0
-	textures.emplace_back(LoadTexture("_Data/Images/server.png")); //1
-	textures.emplace_back(LoadTexture("_Data/Images/back.png")); //2
-	textures.emplace_back(LoadTexture("_Data/Images/app.png")); //3 
-	textures.emplace_back(LoadTexture("_Data/Images/process.png")); //4
-	textures.emplace_back(LoadTexture("_Data/Images/start.png")); //5
-	textures.emplace_back(LoadTexture("_Data/Images/stop.png")); //6
-	textures.emplace_back(LoadTexture("_Data/Images/off.png")); //7
-	textures.emplace_back(LoadTexture("_Data/Images/reset.png")); //8
-	textures.emplace_back(LoadTexture("_Data/Images/copy.png")); //9
-	textures.emplace_back(LoadTexture("_Data/Images/delete.png")); //10
-	textures.emplace_back(LoadTexture("_Data/Images/screenshot.png")); //11
-	textures.emplace_back(LoadTexture("_Data/Images/keylogger.png")); //12
-	textures.emplace_back(LoadTexture("_Data/Images/keyloggerOff.png")); //13
-	textures.emplace_back(LoadTexture("_Data/Images/webcam.png")); //14
-	textures.emplace_back(LoadTexture("_Data/Images/webcamOff.png")); //15
-	textures.emplace_back(LoadTexture("_Data/Images/user2.png")); //16
-	textures.emplace_back(LoadTexture("_Data/Images/pc.png")); //17
+	textures.emplace_back(LoadTexture("_Data/Images/user.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/server.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/back.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/app.png"));  
+	textures.emplace_back(LoadTexture("_Data/Images/process.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/off.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/reset.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/copy.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/delete.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/screenshot.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/keylogger.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/keyloggerOff.png"));
+	textures.emplace_back(LoadTexture("_Data/Images/webcam.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/webcamOff.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/user2.png")); 
+	textures.emplace_back(LoadTexture("_Data/Images/pc.png"));
 
-	animations.emplace_back(LoadTexture("_Data/Images/emptySheet.png")); //0
-	animations.emplace_back(LoadTexture("_Data/Images/waitingAcceptSheet.png")); //1
-	animations.emplace_back(LoadTexture("_Data/Images/waitingSheet.png")); //2
+	animations.emplace_back(LoadTexture("_Data/Images/emptySheet.png")); 
+	animations.emplace_back(LoadTexture("_Data/Images/waitingAcceptSheet.png")); 
+	animations.emplace_back(LoadTexture("_Data/Images/waitingSheet.png"));
 	//Waiting for system load succesfully
 	while (true) {
 		auto newModifiedTime = filesystem::last_write_time(SystemPath);
