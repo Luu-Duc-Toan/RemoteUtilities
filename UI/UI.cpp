@@ -45,7 +45,7 @@ string CopyOrDelete = "";
 string filePath = "";
 bool hasFailQuery = false;
 bool isShowSuccessNotification = false;
-int successNotificationQuery = 0;
+int successNotificationQuery;
 bool isGettingAppName = false;
 string StartOrStop = "";
 string appName = "";
@@ -1023,7 +1023,6 @@ void DrawSuccessNotification() {
 	}
 	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
 	auto mousePosition = GetMousePosition();
-	int y = 300;
 	//Back button
 	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
 	DrawTexture(textures[2], 0, 0, WHITE);
@@ -1034,51 +1033,60 @@ void DrawSuccessNotification() {
 		}
 	}
 	//Box
+	string mainNoti, subNoti;
 	if (successNotificationQuery == 1) {
-		DrawText("Change password successfully!", (SCREENWIDTH - MeasureText("Change password successfully", fontSize)) / 2, y, fontSize, GREEN);
+		mainNoti = "Change password successfully!";
+	}
+	else if (successNotificationQuery == 12) {
+		mainNoti = "Start program succesfully";
+	}
+	else if (successNotificationQuery == 13) {
+		mainNoti = "Stop program succesfully";
 	}
 	else if (successNotificationQuery == 17) {
-		DrawText("Shutdown successfully!", (SCREENWIDTH - MeasureText("Shutdown successfully!", fontSize)) / 2, y, fontSize, GREEN);
+		mainNoti = "Shutdown successfully!";
 	}
 	else if (successNotificationQuery == 18) {
-		DrawText("Reset successfully!", (SCREENWIDTH - MeasureText("Reset successfully!", fontSize)) / 2, y, fontSize, GREEN);
+		mainNoti = "Reset successfully!";
 	}
 	else if (successNotificationQuery == 20) {
-		DrawText("Copy successfully!", (SCREENWIDTH - MeasureText("Copy successfully!", fontSize)) / 2, y, fontSize, GREEN);
-		string noti = "All copy file is saved at ";
-		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 50, fontSize, GREEN);
-		noti = ComPath + "Copy";
-		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 100, fontSize, GREEN);
+		mainNoti = "Copy successfully!";
+		subNoti = "All copy files is saved at " + ComPath + "Copy";
 	}
 	else if (successNotificationQuery == 21) {
-		DrawText("Delete successfully!", (SCREENWIDTH - MeasureText("Delete successfully!", fontSize)) / 2, y, fontSize, GREEN);
+		mainNoti = "Delete successfully!";
 	}
 	else if (successNotificationQuery == 22) {
-		DrawText("Capture screen successfully!", (SCREENWIDTH - MeasureText("Capture screen successfully!", fontSize)) / 2, y, fontSize, GREEN);
-		string noti = "All file is saved at ";
-		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 50, fontSize, GREEN);
-		noti = ComPath + "Capture";
-		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 100, fontSize, GREEN);
+		mainNoti = "Capture screen successfully!";
+		subNoti = "All images is saved at " + ComPath + "Capture";
 	}
 	else if (successNotificationQuery == 23) {
-		DrawText("Keylogger on!", (SCREENWIDTH - MeasureText("Keylogger on!", fontSize)) / 2, y, fontSize, GREEN);
+		mainNoti = "Keylogger on!";
 	}
 	else if (successNotificationQuery == 24) {
-		DrawText("Keylogger off!", (SCREENWIDTH - MeasureText("Webcam off!", fontSize)) / 2, y, fontSize, GREEN);
-		string noti = "All file is saved at ";
-		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 50, fontSize, GREEN);
-		noti = ComPath + "Keylogger";
-		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 100, fontSize, GREEN);
+		mainNoti = "Keylogger off!";
+		subNoti = "All files is saved at " + ComPath + "Keylogger";
 	}
 	else if (successNotificationQuery == 26) {
-		DrawText("Webcam on!", (SCREENWIDTH - MeasureText("Webcam on!", fontSize)) / 2, y, fontSize, GREEN);
+		mainNoti = "Webcam on!";
 	}
 	else if (successNotificationQuery == 27) {
-		DrawText("Webcam off!", (SCREENWIDTH - MeasureText("Webcam off!", fontSize)) / 2, y, fontSize, GREEN);
-		string noti = "All file is saved at ";
-		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 50, fontSize, GREEN);
-		noti = ComPath + "Webcam";
-		DrawText(noti.c_str(), (SCREENWIDTH - MeasureText(noti.c_str(), fontSize)) / 2, y + 100, fontSize, GREEN);
+		mainNoti = "Webcam off!";
+	}
+	int y = 200;
+	DrawText(mainNoti.c_str(), (SCREENWIDTH - MeasureText(mainNoti.c_str(), fontSize)) / 2, y, fontSize, GREEN);
+	int i = 0;
+	int maxLength = 1000;
+	y += 50;
+	while (i < subNoti.size()) {
+		string tmp = "";
+		while (MeasureText(tmp.c_str(), fontSize) < maxLength) {
+			tmp += subNoti[i];
+			i++;
+			if (i >= subNoti.size()) break;
+		}
+		DrawText(tmp.c_str(), (SCREENWIDTH - MeasureText(tmp.c_str(), fontSize)) / 2, y, fontSize, GREEN);
+		y += 50;
 	}
 }
 void DrawFailNotification() {
