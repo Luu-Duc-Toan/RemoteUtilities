@@ -251,6 +251,7 @@ void ServerSocket::ProcessClientMessage() {
 			file.close();
 			sent = true;
 			isWebcamOn = false;
+			result = "Y";
 		}
 	}
 	
