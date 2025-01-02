@@ -281,6 +281,7 @@ void AdminRun() {
 			query = stoi(queryStr);
 			getline(f, selectedSize, ';');
 			int n = stoi(selectedSize);
+			cout << n << endl;
 			string clientID;
 			for (int i = 0; i < n; i++) {
 				getline(f, clientID, ';');
@@ -468,6 +469,19 @@ void GetRole() {
 
 
 int main() {
+	//UIPath
+	ComPath = filesystem::current_path().string();
+	for (char& c : ComPath) {
+		c = (c == '\\') ? '/' : c;
+	}
+	while (ComPath.back() != '/') {
+		ComPath.pop_back();
+	}
+	ComPath += "Common/";
+	UIPath = ComPath + "UI.txt";
+	SystemPath = ComPath + "System.txt";
+	modifiedTime = filesystem::last_write_time(UIPath);
+	//
 	if (!IsRunningAsAdmin()) {
 		cout << "Not running as admin!" << endl;
 		RelaunchAsAdmin();
@@ -482,18 +496,7 @@ int main() {
 		cout << "Your clientID: " << account.clientID << endl;
 		account.Save();
 	}
-	//UIPath
-	ComPath = filesystem::current_path().string();
-	for (char& c : ComPath) {
-		c = (c == '\\') ? '/' : c;
-	}
-	while (ComPath.back() != '/') {
-		ComPath.pop_back();
-	}
-	ComPath += "Common/";
-	UIPath = ComPath + "UI.txt";
-	SystemPath = ComPath + "System.txt";
-	modifiedTime = filesystem::last_write_time(UIPath);
+	//
 	fstream f(SystemPath, ios::out);
 	f << "Y;";
 	f.close();

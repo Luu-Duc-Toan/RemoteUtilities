@@ -178,7 +178,7 @@ void SetClientList(fstream& f) {
 		clientSelected.push_back(true);
 	}
 	maxClientPage = (n + maxClientInRow * 3 - 1) / (maxClientInRow * 3);
-	clientSelectedCount++;
+	clientSelectedCount = n;
 }
 void DrawCursor(int x, int y) {
 	cursorTimer += GetFrameTime();

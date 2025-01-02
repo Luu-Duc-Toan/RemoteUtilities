@@ -1,6 +1,7 @@
 ﻿#include "Header.h"
 
 int main() {
+	this_thread::sleep_for(std::chrono::duration<double>(0.1));
 	//GetComPath();
 	ComPath = filesystem::current_path().string();
 	for (char& c : ComPath) {
