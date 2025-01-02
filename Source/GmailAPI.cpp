@@ -178,6 +178,8 @@ void MyCurl::ClientProcess() { //Change the result
 				modifiedTime = filesystem::last_write_time(UIPath);
 				fstream file(UIPath, ios::in);
 				getline(file, result, ';');
+				file.close();
+				break;
 			}
 		}
 	}

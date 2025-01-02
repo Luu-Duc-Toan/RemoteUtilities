@@ -81,8 +81,5 @@ struct Account {
 		LoadClientID();
 		role = Role::NONE;
 	}
-	~Account() {
-		Save();
-	}
 };
 #endif

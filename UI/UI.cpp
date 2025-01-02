@@ -1037,6 +1037,12 @@ void DrawSuccessNotification() {
 	if (successNotificationQuery == 1) {
 		mainNoti = "Change password successfully!";
 	}
+	else if (successNotificationQuery == 3) {
+		mainNoti = "Add client successfully!";
+	}
+	else if(successNotificationQuery == 4) {
+		mainNoti = "Remove client successfully!";
+	}
 	else if (successNotificationQuery == 12 || successNotificationQuery == 15) {
 		mainNoti = "Start program succesfully";
 	}
@@ -1169,7 +1175,6 @@ void DrawGetClientIDWindow() {
 		else if (input == KEY_ENTER) {
 			userInput = AddOrRemove + ";0;C";
 			userInput += newClientID + ";";
-			newClientID = "";
 			isUserInputChanged = true;
 			isGettingClientID = false;
 			isWaiting = true;
@@ -1211,11 +1216,18 @@ void DrawWaitingNewClientIDAcceptWindow() {
 			successNotificationQuery = 3;
 			isShowSuccessNotification = true;
 			DrawSuccessNotification();
+			clientList.push_back("C" + newClientID);
+			clientSelected.push_back(true);
+			int n = clientList.size();
+			maxClientPage = (n + maxClientInRow * 3 - 1) / (maxClientInRow * 3);
+			clientSelectedCount++;
 		}
 		else {
 			isShowFailNotification = true;
 			failNoti = "Recjected";
 		}
+		newClientID = "";
+		isWaitingNewClientIDAccept = false;
 	}
 	else {
 		DrawText("Waiting for new clientID accept", (SCREENWIDTH - MeasureText("Waiting for new clientID accept", fontSize)) / 2, 200, fontSize, WHITE);
@@ -1344,6 +1356,7 @@ void DrawAdminWindow() {
 					isShowFailNotification = true;
 					getline(f, failNoti, ';');
 				}
+				newClientID = "";
 			}
 			else if (query == "5") {
 				Draw = DrawLoginWindow;

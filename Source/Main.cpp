@@ -354,14 +354,14 @@ void AdminRun() {
 						if (myCurl.receiverID == newClientID) {
 							if (myCurl.query == "3") {
 								if (myCurl.subContent == "Y") {
-									fstream file(UIPath, ios::out);
+									fstream file(SystemPath, ios::out);
 									file << "Y;";
 									file.close();
 									account.AddClientID(newClientID);
 									loginSystem.UpdateClientID(account.user, account.clientList);
 								}
 								else {
-									fstream file(UIPath, ios::out);
+									fstream file(SystemPath, ios::out);
 									file << "N;";
 									file.close();
 									cout << "Reject from clientID: " << newClientID << endl;
@@ -476,6 +476,7 @@ int main() {
 		loginSystem.UpdateMaxClientID();
 		account.SetClientID("C" + to_string(clientID));
 		cout << "Your clientID: " << account.clientID << endl;
+		account.Save();
 	}
 	//UIPath
 	ComPath = filesystem::current_path().string();
@@ -496,5 +497,6 @@ int main() {
 	GetRole();
 	isAppOn = false;
 	CloseWinsock();
+	return 0;
 }
 
