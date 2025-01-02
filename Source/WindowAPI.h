@@ -55,7 +55,7 @@ struct WebcamController {
     }
 
     bool startWebcam() {
-		wstring outputFile = L"_Data/Webcam/webcam";
+		wstring outputFile = L"_Data/Webcam/webcam.avi";
         if (pControl) {
             cout << "Webcam is already running.\n";
             return false;

