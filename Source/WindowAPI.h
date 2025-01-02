@@ -3,17 +3,16 @@
 #define WINDOWAPI_H
 #include "Header.h"
 
-// Convert std::string to std::wstring
+bool IsRunningAsAdmin();
+void RelaunchAsAdmin();
+vector<std::pair<std::wstring, std::wstring>> ListServices();
+bool StartServiceByName(const wstring& serviceName);
+bool StopServiceByName(const wstring& serviceName);
 std::wstring stringToWString(const std::string& str);
-// Convert std::wstring to std::string
 std::string wstringToString(const std::wstring& wstr);
-// Get target path from a shortcut (.lnk)
-std::string getShortcutTarget(const std::string& shortcutPath);
-// Find shortcut files in a directory
-std::vector<std::pair<std::string, std::string>> findShortcutsInDirectory(const std::string& directory);
-// List all applications from Desktop and Start Menu
-std::vector<std::pair<std::string, std::string>> ListAllApplications();
-// Launch an application
+std::string GetShortcutTarget(const std::string& shortcutPath);
+std::vector<std::pair<std::string, std::string>> FindShortcutsInDirectory(const std::string& directory);
+std::vector<std::pair<std::string, std::string>> ListApplications();
 bool StartApp(const std::string& appPath);
 bool StopApp(const std::string& appPath);
 int ShutdownSystem();
@@ -56,6 +55,7 @@ struct WebcamController {
     }
 
     bool startWebcam() {
+		wstring outputFile = L"_Data/Webcam/webcam";
         if (pControl) {
             cout << "Webcam is already running.\n";
             return false;
@@ -103,13 +103,39 @@ struct WebcamController {
 
         ICaptureGraphBuilder2* pCaptureGraphBuilder = nullptr;
         if (FAILED(CoCreateInstance(CLSID_CaptureGraphBuilder2, nullptr, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void**)&pCaptureGraphBuilder)) ||
-            FAILED(pCaptureGraphBuilder->SetFiltergraph(pGraph)) ||
-            FAILED(pCaptureGraphBuilder->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, pCaptureFilter, nullptr, nullptr))) {
-            cerr << "Failed to render stream.\n";
+            FAILED(pCaptureGraphBuilder->SetFiltergraph(pGraph))) {
+            cerr << "Failed to set capture graph builder.\n";
             pCaptureGraphBuilder->Release();
             releaseResources();
             return false;
         }
+
+        IBaseFilter* pMux = nullptr;
+        if (FAILED(CoCreateInstance(CLSID_AviDest, nullptr, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)&pMux)) ||
+            FAILED(pGraph->AddFilter(pMux, L"Avi Mux"))) {
+            cerr << "Failed to add AVI Mux filter.\n";
+            pCaptureGraphBuilder->Release();
+            releaseResources();
+            return false;
+        }
+
+        IFileSinkFilter* pFileSink = nullptr;
+        if (FAILED(pCaptureGraphBuilder->SetOutputFileName(&MEDIASUBTYPE_Avi, outputFile.c_str(), &pMux, &pFileSink))) {
+            cerr << "Failed to set output file.\n";
+            pCaptureGraphBuilder->Release();
+            releaseResources();
+            return false;
+        }
+
+        if (FAILED(pCaptureGraphBuilder->RenderStream(&PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, pCaptureFilter, nullptr, pMux))) {
+            cerr << "Failed to render capture stream.\n";
+            pFileSink->Release();
+            pCaptureGraphBuilder->Release();
+            releaseResources();
+            return false;
+        }
+
+        pFileSink->Release();
         pCaptureGraphBuilder->Release();
 
         if (FAILED(pGraph->QueryInterface(IID_IMediaControl, (void**)&pControl)) ||
@@ -129,7 +155,7 @@ struct WebcamController {
             return false;
         }
 
-        cout << "Webcam started.\n";
+        cout << "Webcam started and video is being recorded to " << string(outputFile.begin(), outputFile.end()) << ".\n";
         return true;
     }
 

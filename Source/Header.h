@@ -5,6 +5,8 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 
 #endif
+#define UNICODE
+#define _UNICODE
 
 #include <vector>
 #include <string>
@@ -34,7 +36,6 @@
 #include <shellapi.h>
 #include <psapi.h>
 #include <tlhelp32.h>
-
 
 using namespace std;
 extern string ComPath;

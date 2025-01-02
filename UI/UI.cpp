@@ -108,7 +108,7 @@ void ResetLogin() {
 	status = "";
 	isTypingUser = true;
 }
-void LoadListApp() {
+void LoadList() {
 	unordered_map<string, pair<string, int>> listApp;
 	for (int i = 0; i < clientList.size(); i++) {
 		if (!clientSelected[i]) continue;
@@ -1018,7 +1018,7 @@ void DrawGetFilePathWindow() {
 	}
 }
 void DrawSuccessNotification() {
-	if (successNotificationQuery == 11) {
+	if (successNotificationQuery == 11 || successNotificationQuery == 14) {
 		isShowSuccessNotification = false;
 	}
 	DrawRectangle(0, 0, SCREENWIDTH, SCREENHEIGHT, { 0, 0, 0, 200 });
@@ -1037,10 +1037,10 @@ void DrawSuccessNotification() {
 	if (successNotificationQuery == 1) {
 		mainNoti = "Change password successfully!";
 	}
-	else if (successNotificationQuery == 12) {
+	else if (successNotificationQuery == 12 || successNotificationQuery == 15) {
 		mainNoti = "Start program succesfully";
 	}
-	else if (successNotificationQuery == 13) {
+	else if (successNotificationQuery == 13 || successNotificationQuery == 16) {
 		mainNoti = "Stop program succesfully";
 	}
 	else if (successNotificationQuery == 17) {
@@ -1348,9 +1348,9 @@ void DrawAdminWindow() {
 			else if (query == "5") {
 				Draw = DrawLoginWindow;
 			}
-			else if (query == "11") {
-				LoadListApp();
-				Draw = DrawListAppWindow;
+			else if (query == "11" || query == "14") {
+				LoadList();
+				Draw = DrawListWindow;
 			}
 			else if (query == "14") {
 				//Change scene
@@ -1649,7 +1649,7 @@ void DrawServerClientWindow() {
 	DrawText("SERVER - CLIENT", (SCREENWIDTH - MeasureText("SERVER - CLIENT", 80)) / 2, 100, 80, BLACK);
 	DrawText(("ID: " + yourClientID).c_str(), (SCREENWIDTH - MeasureText(("ID: " + yourClientID).c_str(), fontSize)) / 2, 220, fontSize, BLACK);
 }
-void DrawListAppWindow() { //Change variable to list service
+void DrawListWindow() { //Change variable to list service
 	Vector2 mousePosition = GetMousePosition();
 	if (isWaiting) {
 		mousePosition = { -1, -1 };

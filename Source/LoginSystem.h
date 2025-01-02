@@ -20,9 +20,9 @@ struct LoginSystem {
 	void UpdatePassword(const string user, const string password);
 	bool isMatchGmail(const string user, const string gmail);
 	bool SearchAccount(const string user, const string password, Account& account);
-	void InsertAccount(const string user, const string password, const string email);
+	void InsertAccount(const string user, const string password, const string gmail);
 	void DeleteAccount(const string user);
-	void UpdateAccount(const string user, const string password, const string email, const vector<string> clientList);
+	void UpdateClientID(const string user, const vector<string> clientList);
 	int GetMaxClientID();
 	int UpdateMaxClientID();
 	LoginSystem();

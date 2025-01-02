@@ -28,7 +28,7 @@ void ServerSocket::ProcessClientMessage() {
 	}
 	if (query == 11)
 	{
-		vector <pair<string, string>> apps = ListAllApplications();
+		vector <pair<string, string>> apps = ListApplications();
 		string filePath = "_Data/ClientList/ListApp";
 		fstream file(filePath, ios::out);
 		if (!file.is_open())
@@ -76,6 +76,57 @@ void ServerSocket::ProcessClientMessage() {
 		Receive();
 		string appPath = string(buffer);
 		result = StopApp(appPath) ? "Y" : "N";
+	}
+	else if (query == 14)
+	{
+		vector <pair<wstring, wstring>> services = ListServices();
+		string filePath = "_Data/ClientList/ListApp";
+		fstream file(filePath, ios::out);
+		if (!file.is_open())
+		{
+			cout << "Khong the mo file de ghi";
+		}
+		else
+		{
+			for (const auto& service : services) {
+				file << wstringToString(service.first) << ';' << wstringToString(service.second) << ';';
+			}
+		}
+		file.close();
+		file.open(filePath, ios::binary | ios::in);
+		if (!file.is_open()) {
+			result = "N"; //File not found
+		}
+		else {
+			file.seekg(0, ios::end);
+			size_t fileSize = file.tellg();
+			file.seekg(0, ios::beg);
+			result = "F" + to_string(fileSize);
+			Send();
+			char fileBuffer[maxBufferSize];
+			while (fileSize > 0 && fileSize >= maxBufferSize) {
+				file.read(buffer, maxBufferSize);
+				send(clientSocket, buffer, maxBufferSize, 0);
+				fileSize -= maxBufferSize;
+			}
+			if (fileSize > 0) {
+				file.read(buffer, fileSize);
+				send(clientSocket, buffer, fileSize, 0);
+			}
+			file.close();
+			sent = true;
+		}
+	}
+	else if (query == 15)
+	{
+		Receive();
+		wstring serviceName = stringToWString(string(buffer));
+		result = StartServiceByName(serviceName) ? "Y" : "N";
+	}
+	else if (query == 16) {
+		Receive();
+		wstring serviceName = stringToWString(string(buffer));
+		result = StopServiceByName(serviceName) ? "Y" : "N";
 	}
 	else if (query == 17) {
 		result = ShutdownSystem() == 0 ? "Y" : "N";

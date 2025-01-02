@@ -162,16 +162,14 @@ void LoginSystem::UpdatePassword(const string user, const string password) {
 	pstmt->executeUpdate();
 	delete pstmt;
 }
-void LoginSystem::UpdateAccount(const string user, const string password, const string email, const vector<string> clientList) {
+void LoginSystem::UpdateClientID(const string user, const vector<string> clientList) {
 	string clientListString = ConvertClientList(clientList);
 
 	PreparedStatement* pstmt = con->prepareStatement(
-		"UPDATE users SET password = ?, email = ?, clientList = ? WHERE user = ?"
+		"UPDATE users SET clientList = ? WHERE user = ?"
 	);
-	pstmt->setString(1, password.c_str());
-	pstmt->setString(2, email.c_str());
-	pstmt->setString(3, clientListString.c_str());
-	pstmt->setString(4, user.c_str());
+	pstmt->setString(1, clientListString.c_str());
+	pstmt->setString(2, user.c_str());
 	pstmt->executeUpdate();
 	cout << "Values updated successfully!" << endl;
 	delete pstmt;

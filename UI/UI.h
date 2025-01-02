@@ -65,7 +65,7 @@ extern string userInput;
 extern bool isUserInputChanged;
 extern filesystem::file_time_type modifiedTime;
 ////////////////////////////////////////////////////////////////////////
-void LoadListApp();
+void LoadList();
 void ResetLogin();
 void SetClientList(fstream& f);
 void DrawCursor(int x, int y);
@@ -77,6 +77,6 @@ void DrawSignUpWindow();
 void DrawConfirmationWindow();
 void DrawAdminWindow();
 void DrawServerClientWindow();
-void DrawListAppWindow();
+void DrawListWindow();
 
 #endif

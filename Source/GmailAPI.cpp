@@ -58,48 +58,8 @@ void MyCurl::CreateEmail(const string id, const string content) {
 		"Subject:" + id + "\r\n\r\n"
 		+ content + "\r\n\r\n";
 }
-void MyCurl::ConfirmEmail(string& recipent, string &content) {
-	email_payload_text =
-		"Subject: Confirm email\r\n\r\n"
-		+ content + "\r\n\r\n";
-	curl_slist* recipientTmp = nullptr;
-	recipientTmp = curl_slist_append(nullptr, recipent.c_str());
-	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipientTmp);
-	res = curl_easy_perform(sender);
-	// Check for errors
-	if (res != CURLE_OK) {
-		cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << endl;
-	}
-	else {
-		cout << "Email sent successfully!" << endl;
-	}
-	if (recipientTmp) {
-		curl_slist_free_all(recipientTmp);
-		recipientTmp = nullptr;
-	}
-	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipients);
-}
 
 void MyCurl::InitSender() {
-	sender = curl_easy_init();
-	//Set the SMTP server URL
-	curl_easy_setopt(sender, CURLOPT_URL, smtpURL.c_str());
-	// Enable TLS for secure connection
-	curl_easy_setopt(sender, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-	//Set the login credentials
-	curl_easy_setopt(sender, CURLOPT_USERNAME, clientAccount.c_str());
-	curl_easy_setopt(sender, CURLOPT_PASSWORD, clientPassword.c_str());
-	//Set the sender email address
-	curl_easy_setopt(sender, CURLOPT_MAIL_FROM, clientAccount.c_str());
-	//Add recipient(s)
-	recipients = curl_slist_append(recipients, serverAccount.c_str());
-	curl_easy_setopt(sender, CURLOPT_MAIL_RCPT, recipients);
-	// Specify the payload
-	curl_easy_setopt(sender, CURLOPT_READFUNCTION, payload_source);
-	curl_easy_setopt(sender, CURLOPT_READDATA, &upload_ctx);
-	curl_easy_setopt(sender, CURLOPT_UPLOAD, 1L);
-}
-void MyCurl::InitSenderForFile() {
 	sender = curl_easy_init();
 	//Set the SMTP server URL
 	curl_easy_setopt(sender, CURLOPT_URL, smtpURL.c_str());
@@ -242,7 +202,14 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query, vector<stri
 						file.close();
 						cout << "Saved ListApp of " + receiverID + " at " + ComPath + "List/ListApp" + receiverID << endl;
 					}
-					if (query == 22) { //More query, Capture screenshot
+					else if (query == 14) {
+						subContent = base64_decode(subContent);
+						fstream file(ComPath + "List/ListService" + receiverID, ios::out | ios::binary);
+						file << subContent;
+						file.close();
+						cout << "Saved ListApp of " + receiverID + " at " + ComPath + "List/ListService" + receiverID << endl;
+					}
+					else if (query == 22) { //More query, Capture screenshot
 						subContent = base64_decode(subContent);
 						fstream file(ComPath + "Screenshot/screenshot" + receiverID + ".jpg", ios::out | ios::binary);
 						file << subContent;

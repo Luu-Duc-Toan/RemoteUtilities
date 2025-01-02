@@ -1,13 +1,145 @@
 ﻿#include "WindowAPI.h"
 
-// Convert std::string to std::wstring
+// Ki?m tra ch??ng tŕnh có ch?y v?i quy?n Administrator hay không
+bool IsRunningAsAdmin() {
+	BOOL isAdmin = FALSE;
+	HANDLE token = nullptr;
+
+	if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+		TOKEN_ELEVATION elevation;
+		DWORD size;
+		if (GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &size)) {
+			isAdmin = elevation.TokenIsElevated;
+		}
+		CloseHandle(token);
+	}
+	return isAdmin;
+}
+// Relaunch ch??ng tŕnh v?i quy?n Administrator
+void RelaunchAsAdmin() {
+	wchar_t exePath[MAX_PATH];
+	GetModuleFileName(nullptr, exePath, MAX_PATH);
+
+	SHELLEXECUTEINFO sei = { sizeof(SHELLEXECUTEINFO) };
+	sei.lpVerb = L"runas";
+	sei.lpFile = exePath;
+	sei.nShow = SW_SHOWNORMAL;
+
+	if (!ShellExecuteEx(&sei)) {
+		cout << "Failed to relaunch as admin. Error: " << GetLastError() << endl;
+	}
+	exit(0);
+}
+vector<std::pair<std::wstring, std::wstring>> ListServices() {
+	SC_HANDLE hSCManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE);
+
+	DWORD bytesNeeded, servicesReturned, resumeHandle = 0;
+	ENUM_SERVICE_STATUS_PROCESS services[1024];
+
+	if (!EnumServicesStatusEx(
+		hSCManager,                     // Service control manager handle
+		SC_ENUM_PROCESS_INFO,           // Information level
+		SERVICE_WIN32,                  // Service type
+		SERVICE_STATE_ALL,              // Service state
+		(LPBYTE)services,               // Buffer
+		sizeof(services),               // Buffer size
+		&bytesNeeded,                   // Bytes needed
+		&servicesReturned,              // Number of services returned
+		&resumeHandle,                  // Resume handle
+		nullptr)) {
+		cout << "Failed to enumerate services: " << GetLastError() << endl;
+		CloseServiceHandle(hSCManager);
+		return {};
+	}
+	vector<std::pair<std::wstring, std::wstring>> result;
+	for (DWORD i = 0; i < servicesReturned; ++i) {
+		result.push_back({ services[i].lpDisplayName, services[i].lpServiceName });
+	}
+
+	CloseServiceHandle(hSCManager);
+}
+bool StartServiceByName(const wstring& serviceName) {
+	SC_HANDLE hSCManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+	if (!hSCManager) {
+		cout << "Failed to open service manager: " << GetLastError() << endl;
+		return false;
+	}
+
+	SC_HANDLE hService = OpenService(hSCManager, serviceName.c_str(), SERVICE_QUERY_STATUS | SERVICE_START);
+	if (!hService) {
+		DWORD error = GetLastError();
+		if (error == ERROR_ACCESS_DENIED) {
+			cout << "Access denied. Please run the program as Administrator." << endl;
+		}
+		else {
+			cout << "Failed to open service: " << error << endl;
+		}
+		CloseServiceHandle(hSCManager);
+		return false;
+	}
+
+	// Ki?m tra tr?ng thái d?ch v?
+	SERVICE_STATUS_PROCESS serviceStatus;
+	DWORD bytesNeeded;
+	if (QueryServiceStatusEx(hService, SC_STATUS_PROCESS_INFO, (LPBYTE)&serviceStatus, sizeof(SERVICE_STATUS_PROCESS), &bytesNeeded)) {
+		if (serviceStatus.dwCurrentState == SERVICE_RUNNING) {
+			wcout << L"Service " << serviceName << L" is already running." << endl;
+			CloseServiceHandle(hService);
+			CloseServiceHandle(hSCManager);
+			return true; // Không c?n kh?i ??ng l?i
+		}
+	}
+	else {
+		cerr << "Failed to query service status: " << GetLastError() << endl;
+	}
+
+	// Kh?i ??ng d?ch v?
+	if (!StartService(hService, 0, nullptr)) {
+		cerr << "Failed to start service: " << GetLastError() << endl;
+		CloseServiceHandle(hService);
+		CloseServiceHandle(hSCManager);
+		return false;
+	}
+
+	wcout << L"Service " << serviceName << L" started successfully." << endl;
+	CloseServiceHandle(hService);
+	CloseServiceHandle(hSCManager);
+	return true;
+}
+bool StopServiceByName(const wstring& serviceName) {
+	SC_HANDLE hSCManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+	if (!hSCManager) {
+		cerr << "Failed to open service manager: " << GetLastError() << endl;
+		return false;
+	}
+
+	SC_HANDLE hService = OpenService(hSCManager, serviceName.c_str(), SERVICE_STOP);
+	if (!hService) {
+		cerr << "Failed to open service: " << GetLastError() << endl;
+		CloseServiceHandle(hSCManager);
+		return false;
+	}
+
+	SERVICE_STATUS serviceStatus;
+	if (!ControlService(hService, SERVICE_CONTROL_STOP, &serviceStatus)) {
+		cerr << "Failed to stop service: " << GetLastError() << endl;
+		CloseServiceHandle(hService);
+		CloseServiceHandle(hSCManager);
+		return false;
+	}
+
+	wcout << L"Service " << serviceName << L" stopped successfully." << endl;
+	CloseServiceHandle(hService);
+	CloseServiceHandle(hSCManager);
+	return true;
+}
+
 std::wstring stringToWString(const std::string& str) {
 	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), nullptr, 0);
 	std::wstring wstrTo(size_needed, 0);
 	MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
 	return wstrTo;
 }
-// Convert std::wstring to std::string
 std::string wstringToString(const std::wstring& wstr) {
 	int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), nullptr, 0, nullptr, nullptr);
 	std::string strTo(size_needed, 0);
@@ -15,7 +147,7 @@ std::string wstringToString(const std::wstring& wstr) {
 	return strTo;
 }
 // Get target path from a shortcut (.lnk)
-std::string getShortcutTarget(const std::string& shortcutPath) {
+std::string GetShortcutTarget(const std::string& shortcutPath) {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) {
         std::cerr << "Failed to initialize COM: " << hr << std::endl;
@@ -40,7 +172,7 @@ std::string getShortcutTarget(const std::string& shortcutPath) {
     return wstringToString(targetPath);
 }
 // Find shortcut files in a directory
-std::vector<std::pair<std::string, std::string>> findShortcutsInDirectory(const std::string& directory) {
+std::vector<std::pair<std::string, std::string>> FindShortcutsInDirectory(const std::string& directory) {
 	std::vector<std::pair<std::string, std::string>> shortcuts;
 
 	WIN32_FIND_DATAA findData;
@@ -54,7 +186,7 @@ std::vector<std::pair<std::string, std::string>> findShortcutsInDirectory(const 
 			if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 				std::string shortcutName = findData.cFileName;
 				std::string fullPath = directory + "\\" + shortcutName;
-				std::string target = getShortcutTarget(fullPath);
+				std::string target = GetShortcutTarget(fullPath);
 				shortcuts.emplace_back(shortcutName.substr(0, shortcutName.find_last_of(".")), target);
 			}
 		} while (FindNextFileA(hFind, &findData) != 0);
@@ -63,8 +195,7 @@ std::vector<std::pair<std::string, std::string>> findShortcutsInDirectory(const 
 
 	return shortcuts;
 }
-// List all applications from Desktop and Start Menu
-std::vector<std::pair<std::string, std::string>> ListAllApplications() {
+std::vector<std::pair<std::string, std::string>> ListApplications() {
 	std::vector<std::pair<std::string, std::string>> applications;
 
 	// Desktop folder for the current user
@@ -73,23 +204,22 @@ std::vector<std::pair<std::string, std::string>> ListAllApplications() {
 		std::cerr << "Failed to retrieve Desktop path." << std::endl;
 		return applications;
 	}
-	auto desktopApps = findShortcutsInDirectory(desktopPath);
+	auto desktopApps = FindShortcutsInDirectory(desktopPath);
 	applications.insert(applications.end(), desktopApps.begin(), desktopApps.end());
 
 	// Start Menu folder for all users
 	std::string startMenuPath = "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs";
-	auto systemApps = findShortcutsInDirectory(startMenuPath);
+	auto systemApps = FindShortcutsInDirectory(startMenuPath);
 	applications.insert(applications.end(), systemApps.begin(), systemApps.end());
 
 	// Start Menu folder for the current user
 	char userStartMenuPath[MAX_PATH];
 	SHGetFolderPathA(nullptr, CSIDL_PROGRAMS, nullptr, SHGFP_TYPE_CURRENT, userStartMenuPath);
-	auto userApps = findShortcutsInDirectory(userStartMenuPath);
+	auto userApps = FindShortcutsInDirectory(userStartMenuPath);
 	applications.insert(applications.end(), userApps.begin(), userApps.end());
 
 	return applications;
 }
-// Launch an application
 bool StartApp(const std::string& appPath) {
 	wstring wAppPath = stringToWString(appPath);
 	if (!appPath.empty() && PathFileExistsW(wAppPath.c_str())) {
@@ -141,7 +271,8 @@ bool StopApp(const std::string& appPath) {
 	}
 	CloseHandle(hProcessSnap);
 	return true;
-}																																											
+}		
+
 int ShutdownSystem() {
 	int result = system("shutdown /s /t 20");
 	return result;
@@ -149,6 +280,7 @@ int ShutdownSystem() {
 int ResetSystem() {
 	return system("shutdown /r /t 20");
 }
+
 string TranslateKey(int key, bool capsLock, bool shiftPressed, bool winPressed) {
 	if (key == VK_SPACE) return "[SPACE]";
 	if (key == VK_RETURN) return "[ENTER]";
@@ -228,6 +360,7 @@ void Keylogger(bool& isKeyLoggerOn, bool &isServerOn) {
 	}
 	output.close();
 }
+
 bool DeleteFile(const string& filepath) {
 	if (DeleteFileA(filepath.c_str())) {
 		return true;
@@ -243,6 +376,7 @@ bool DeleteFile(const string& filepath) {
 		return false;
 	}
 }
+
 void Webcam(bool& isWebcamOn, bool& isServerOn) {
 	WebcamController webcam;																																																										
 	MSG msg;
@@ -283,8 +417,7 @@ bool CaptureScreen(){
 
 	CImage image;
 	image.Attach(hCaptureBitmap);
-	HRESULT hr = image.Save(outputFile.c_str(), Gdiplus::ImageFormatJPEG);
-
+    HRESULT hr = image.Save(stringToWString(outputFile).c_str(), Gdiplus::ImageFormatJPEG);
 
 	image.Detach();
 	DeleteObject(hCaptureBitmap);

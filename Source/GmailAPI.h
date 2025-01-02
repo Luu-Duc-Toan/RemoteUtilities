@@ -49,21 +49,6 @@ static size_t payload_source_confirmation(void* ptr, size_t size, size_t nmemb, 
 	}
 	return 0;
 }
-static size_t payload_source_file(void* ptr, size_t size, size_t nmemb, void* userp) {
-	upload_status* upload_ctx = (upload_status*)userp;
-	const char* data;
-	if ((size == 0) || (nmemb == 0) || ((size * nmemb) < 1)) {
-		return 0;
-	}
-	data = &email_payload_text[upload_ctx->lines_read];
-	if (data) {
-		size_t len = strlen(data);
-		memcpy(ptr, data, len);
-		upload_ctx->lines_read += len;
-		return len;
-	}
-	return 0;
-}
 
 string base64_encode(const string& input);
 string base64_decode(const string& input);
@@ -105,12 +90,11 @@ struct MyCurl {
 		reverse(fileName.begin(), fileName.end());
 		return fileName;
 	}
-	void CreateEmail(const string id, const string content);
+	void CreateEmail(const string ID, const string content);
 	void InitSender();
-	void InitSenderForFile();
 	void InitReceiverSession(string& URL);
 	void CleanSession(CURL*& session, string& buffer);
-	void UpdateSearchQuery(string clientIDs);
+	void UpdateSearchQuery(string ID);
 	vector<int> GetListUIDUnseen();
 	void SendEmail(const vector<string> IDs, const string content);
 	void Preprocess();
@@ -118,10 +102,10 @@ struct MyCurl {
 	bool ShouldSendToServer();
 	void AdminProcess(const vector<string> IDs, const int query, vector<string> &failedClientIDs);
 	void ReadEmail(bool& isAppOn);
-	void ConfirmEmail(string& recipent, string &content);
 	MyCurl(bool& isAppOn);
 	~MyCurl();
 };
+
 struct ConfirmationCurl {
 	CURL* sender = nullptr;
 	curl_slist* recipients = nullptr;

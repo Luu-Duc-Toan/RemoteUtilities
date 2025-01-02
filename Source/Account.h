@@ -22,8 +22,8 @@ struct Account {
 	void SetClientID(const string clientID) {
 		this->clientID = clientID;
 	}
-	void AddClientID(const string clientIDs) {
-		clientList.push_back(clientIDs);
+	void AddClientID(const string clientID) {
+		clientList.push_back(clientID);
 	}
 	bool RemoveClientID(const string clientID) {
 		int n = clientList.size();
@@ -65,7 +65,6 @@ struct Account {
 		file.close();
 	}
 	void Reset() {
-		this->clientID = "";
 		this->adminID = "";
 		this->user = "";
 		this->password = "";
