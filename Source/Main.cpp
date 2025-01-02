@@ -468,6 +468,10 @@ void GetRole() {
 
 
 int main() {
+	if (!IsRunningAsAdmin()) {
+		cout << "Not running as admin!" << endl;
+		RelaunchAsAdmin();
+	}
 	srand((unsigned)time(0));
 	InitWinsock(wsaData);
 	//First time using

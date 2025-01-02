@@ -178,7 +178,7 @@ void SetClientList(fstream& f) {
 		clientSelected.push_back(true);
 	}
 	maxClientPage = (n + maxClientInRow * 3 - 1) / (maxClientInRow * 3);
-	clientSelectedCount = n;
+	clientSelectedCount++;
 }
 void DrawCursor(int x, int y) {
 	cursorTimer += GetFrameTime();
@@ -1867,7 +1867,7 @@ void DrawListServiceWindow() { //Change variable to list service
 		if (CheckCollisionPointRec(mousePosition, startBox)) {
 			DrawRectangleRec(startBox, GRAY);
 			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-				userInput = "12;" + to_string(clientSelectedCount) + ';';
+				userInput = "15;" + to_string(clientSelectedCount) + ';';
 				for (int i = 0; i < clientList.size(); i++) {
 					if (!clientSelected[i]) continue;
 					userInput += clientList[i] + ";";
@@ -1884,7 +1884,7 @@ void DrawListServiceWindow() { //Change variable to list service
 		if (CheckCollisionPointRec(mousePosition, stopBox)) {
 			DrawRectangleRec(stopBox, GRAY);
 			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-				userInput = "13;" + to_string(clientSelectedCount) + ';';
+				userInput = "16;" + to_string(clientSelectedCount) + ';';
 				for (int i = 0; i < clientList.size(); i++) {
 					if (!clientSelected[i]) continue;
 					userInput += clientList[i] + ";";
