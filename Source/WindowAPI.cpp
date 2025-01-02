@@ -57,6 +57,7 @@ vector<std::pair<std::wstring, std::wstring>> ListServices() {
 	}
 
 	CloseServiceHandle(hSCManager);
+	return result;
 }
 bool StartServiceByName(const wstring& serviceName) {
 	SC_HANDLE hSCManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);

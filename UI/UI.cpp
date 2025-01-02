@@ -108,11 +108,12 @@ void ResetLogin() {
 	status = "";
 	isTypingUser = true;
 }
-void LoadList() {
+void LoadList(const string mode) {
+	string path = ComPath + "List/" + mode;
 	unordered_map<string, pair<string, int>> listApp;
 	for (int i = 0; i < clientList.size(); i++) {
 		if (!clientSelected[i]) continue;
-		fstream file(ComPath + "List/ListApp" + clientList[i], ios::binary | ios::in);
+		fstream file(path + clientList[i], ios::binary | ios::in);
 		string appName, appPath;
 		while (!file.eof()) {
 			getline(file, appName, ';');
@@ -1361,12 +1362,13 @@ void DrawAdminWindow() {
 			else if (query == "5") {
 				Draw = DrawLoginWindow;
 			}
-			else if (query == "11" || query == "14") {
-				LoadList();
-				Draw = DrawListWindow;
+			else if (query == "11") {
+				LoadList("ListApp");
+				Draw = DrawListAppWindow;
 			}
-			else if (query == "14") {
-				//Change scene
+			else if(query == "14") {
+				LoadList("ListService");
+				Draw = DrawListServiceWindow;
 			}
 			string y;
 			getline(f, y, ';');
@@ -1662,7 +1664,7 @@ void DrawServerClientWindow() {
 	DrawText("SERVER - CLIENT", (SCREENWIDTH - MeasureText("SERVER - CLIENT", 80)) / 2, 100, 80, BLACK);
 	DrawText(("ID: " + yourClientID).c_str(), (SCREENWIDTH - MeasureText(("ID: " + yourClientID).c_str(), fontSize)) / 2, 220, fontSize, BLACK);
 }
-void DrawListWindow() { //Change variable to list service
+void DrawListAppWindow() { //Change variable to list service
 	Vector2 mousePosition = GetMousePosition();
 	if (isWaiting) {
 		mousePosition = { -1, -1 };
@@ -1709,6 +1711,140 @@ void DrawListWindow() { //Change variable to list service
 	}
 	//Title
 	DrawText("LIST APPS", (SCREENWIDTH - MeasureText("LIST APPS", 80)) / 2, 100, 80, BLACK);
+	//Apps
+	Rectangle box = { 150, 200, 1200, 650 }; //x, y, width, height
+	DrawRectangleLinesEx(box, 5, BLACK);
+	DrawLineEx({ box.x + 300, box.y }, { box.x + 300, box.y + box.height }, 5, BLACK);
+	int appY = box.y - fontSize + 12;
+	int maxApp = min(appPage * maxAppInPage, (int)apps.size());
+	Rectangle startBox = { box.x + 10, box.y - fontSize + 8, 135, fontSize + 10 };
+	int startX = startBox.x + (startBox.width - MeasureText("Start", fontSize)) / 2;
+	Rectangle stopBox = { startBox.x + startBox.width + 10, startBox.y, startBox.width, startBox.height };
+	int stopX = stopBox.x + (stopBox.width - MeasureText("Stop", fontSize)) / 2;
+
+	for (int i = (appPage - 1) * maxAppInPage; i < maxApp; i++) {
+		appY += fontSize + 20;
+		DrawText(apps[i].first.c_str(), box.x + 310, appY, fontSize, BLACK);
+		//Start
+		startBox.y += startBox.height + 10;
+		DrawRectangleRec(startBox, GREEN);
+		DrawText("Start", startX, appY, fontSize, BLACK);
+		mousePosition = GetMousePosition();
+		if (CheckCollisionPointRec(mousePosition, startBox)) {
+			DrawRectangleRec(startBox, GRAY);
+			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+				userInput = "12;" + to_string(clientSelectedCount) + ';';
+				for (int i = 0; i < clientList.size(); i++) {
+					if (!clientSelected[i]) continue;
+					userInput += clientList[i] + ";";
+				}
+				userInput += apps[i].second + ";";
+				isUserInputChanged = true;
+				isWaiting = true;
+			}
+		}
+		//Stop
+		stopBox.y += stopBox.height + 10;
+		DrawRectangleRec(stopBox, RED);
+		DrawText("Stop", stopX, appY, fontSize, BLACK);
+		if (CheckCollisionPointRec(mousePosition, stopBox)) {
+			DrawRectangleRec(stopBox, GRAY);
+			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+				userInput = "13;" + to_string(clientSelectedCount) + ';';
+				for (int i = 0; i < clientList.size(); i++) {
+					if (!clientSelected[i]) continue;
+					userInput += clientList[i] + ";";
+				}
+				userInput += apps[i].second + ";";
+				isUserInputChanged = true;
+				isWaiting = true;
+			}
+		}
+	}
+
+	//Arrow
+	Vector2 v1 = { 40, 495 };
+	Vector2 v2 = { 70, 510 };
+	Vector2 v3 = { 70, 480 };
+	DrawTriangle(v1, v2, v3, GRAY);
+	if (CheckCollisionPointTriangle(mousePosition, v1, v2, v3)) {
+		DrawTriangle(v1, v2, v3, DARKGRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			appPage--;
+			if (appPage < 1) {
+				appPage = maxAppPage;
+			}
+		}
+	}
+	v1 = { 80, 480 };
+	v2 = { 80, 510 };
+	v3 = { 110, 495 };
+	DrawTriangle(v1, v2, v3, GRAY);
+	if (CheckCollisionPointTriangle(mousePosition, v1, v2, v3)) {
+		DrawTriangle(v1, v2, v3, DARKGRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			appPage++;
+			if (appPage > maxAppPage) {
+				appPage = 1;
+			}
+		}
+	}
+	//Draw waiting animation
+	if (isWaiting) DrawWaitingAnimation();
+	else if (isShowFailNotification) {
+		DrawFailNotification();
+	}
+	else if (isShowSuccessNotification) {
+		DrawSuccessNotification();
+	}
+}
+void DrawListServiceWindow() { //Change variable to list service
+	Vector2 mousePosition = GetMousePosition();
+	if (isWaiting) {
+		mousePosition = { -1, -1 };
+		if (filesystem::last_write_time(SystemPath) != modifiedTime) {
+			this_thread::sleep_for(std::chrono::duration<double>(0.1));
+			modifiedTime = filesystem::last_write_time(SystemPath);
+			fstream f(SystemPath, ios::in);
+			string query;
+			getline(f, query, ';');
+			string y;
+			getline(f, y, ';');
+			if (y == "Y") {
+				isShowSuccessNotification = true;
+				successNotificationQuery = stoi(query);
+			}
+			else {
+				string size;
+				getline(f, size, ';');
+				int n = stoi(size);
+				string clientID;
+				failNoti = "Execution failed for client IDs:";
+				for (int i = 0; i < n; i++) {
+					getline(f, clientID, ';');
+					failNoti += " " + clientID;
+				}
+				isShowFailNotification = true;
+			}
+			f.close();
+			isWaiting = false;
+		}
+	}
+	if (isShowFailNotification || isShowSuccessNotification) {
+		mousePosition = { -1, -1 };
+	}
+	//Back button
+	Rectangle backButton = { 0, 0, textures[2].width, textures[2].height };
+	DrawTexture(textures[2], 0, 0, WHITE);
+	if (CheckCollisionPointRec(mousePosition, backButton)) {
+		DrawRectangleRec(backButton, GRAY);
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+			isWaiting = false;
+			Draw = DrawAdminWindow;
+		}
+	}
+	//Title
+	DrawText("LIST SERVICES", (SCREENWIDTH - MeasureText("LIST SERVICES", 80)) / 2, 100, 80, BLACK);
 	//Apps
 	Rectangle box = { 150, 200, 1200, 650 }; //x, y, width, height
 	DrawRectangleLinesEx(box, 5, BLACK);

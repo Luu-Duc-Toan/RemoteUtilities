@@ -235,7 +235,7 @@ void MyCurl::AdminProcess(const vector<string> IDs, const int query, vector<stri
 					}
 					else if (query == 27) {
 						subContent = base64_decode(subContent);
-						fstream file(ComPath + "Keylogger/webcam" + receiverID + ".avi", ios::out | ios::binary);
+						fstream file(ComPath + "Webcam/webcam" + receiverID + ".avi", ios::out | ios::binary);
 						file << subContent;
 						file.close();
 						cout << "Saved video file of " + receiverID + " at " + ComPath + "Webcam/webcam" + receiverID + ".avi" << endl;
